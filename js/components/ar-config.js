@@ -48,7 +48,8 @@ window.AR_CONFIG = {
         ui: {
             hudOpacity: 0.8,
             hudScale: 0.8,
-            backgroundColor: 'rgba(0,0,0,0.7)',
+            backgroundColor: '#000000',
+            backgroundOpacity: 0.7,
             textColor: '#FFFFFF',
             accentColor: '#00FF00'
         }

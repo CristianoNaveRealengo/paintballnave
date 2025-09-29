@@ -5,26 +5,26 @@
     <title>Paintball VR - Meta Quest 3</title>
     <meta name="description" content="Jogo de Paintball Multiplayer em VR">
     
-    <!-- A-Frame Core -->
-        <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
+    <!-- A-Frame Core (local) -->
+        <script src="libs/aframe-core.min.js"></script>
         
-        <!-- A-Frame Physics System (versão compatível com A-Frame 1.4.0) -->
-        <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-physics-system@v4.2.0/dist/aframe-physics-system.min.js"></script>
+        <!-- A-Frame Physics System (local) -->
+        <script src="libs/aframe-physics-system.min.js"></script>
         
-        <!-- A-Frame Extras (versão compatível com A-Frame 1.4.0) -->
-        <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.2/dist/aframe-extras.min.js"></script>
+        <!-- A-Frame Extras (local) -->
+        <script src="libs/aframe-extras.min.js"></script>
         
         <!-- WebXR Polyfill -->
         <script src="https://cdn.jsdelivr.net/npm/webxr-polyfill@latest/build/webxr-polyfill.min.js"></script>
         
-        <!-- A-Frame WebXR (versão específica para compatibilidade) -->
-        <script src="https://cdn.jsdelivr.net/gh/aframevr/aframe-webxr@v1.0.0/dist/aframe-webxr.min.js"></script>
+        <!-- A-Frame WebXR (local stub - A-Frame 1.7.0 tem suporte nativo) -->
+        <script src="libs/aframe-webxr.min.js"></script>
         
-        <!-- A-Frame Hand Tracking Controls (versão específica) -->
-        <script src="https://cdn.jsdelivr.net/gh/aframevr/aframe-hand-tracking-controls@v1.0.0/dist/aframe-hand-tracking-controls.min.js"></script>
+        <!-- A-Frame Hand Tracking Controls (local stub) -->
+        <script src="libs/aframe-hand-tracking-controls.min.js"></script>
         
-        <!-- A-Frame Hand Tracking Extras (versão específica) -->
-        <script src="https://cdn.jsdelivr.net/gh/aframevr/aframe-hand-tracking-extras@v1.0.0/dist/aframe-hand-tracking-extras.min.js"></script>
+        <!-- A-Frame Hand Tracking Extras (local stub) -->
+        <script src="libs/aframe-hand-tracking-extras.min.js"></script>
         
         <!-- Socket.IO for multiplayer -->
         <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
@@ -40,6 +40,7 @@
     <script src="js/components/ar-config.js"></script>
     <script src="js/components/ar-manager.js"></script>
     <script src="js/components/quest-hand-tracking.js"></script>
+    <script src="js/components/safe-physics.js"></script>
     
     <!-- Utilitários -->
     <script src="js/utils/math-utils.js"></script>
@@ -48,6 +49,8 @@
     
     <!-- Estilos CSS -->
     <link rel="stylesheet" href="css/style.css">
+    <!-- Favicon -->
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 </head>
 <body>
     <!-- Tela de Loading com Preview do Mapa -->
@@ -107,23 +110,23 @@
             <a-mixin id="obstacle-mixin" 
                 geometry="primitive: box" 
                 material="color: #8B4513; roughness: 0.8"
-                static-body></a-mixin>
+                safe-physics="type: static; shape: box"></a-mixin>
                 
             <a-mixin id="cylinder-obstacle-mixin" 
                 geometry="primitive: cylinder" 
                 material="color: #654321; roughness: 0.8"
-                static-body></a-mixin>
+                safe-physics="type: static; shape: cylinder"></a-mixin>
             
             <!-- Modelos 3D -->
             <a-mixin id="obstacle" 
                 geometry="primitive: box; width: 2; height: 2; depth: 1"
                 material="color: #4169E1; roughness: 0.8"
-                static-body></a-mixin>
+                safe-physics="type: static; shape: box"></a-mixin>
                 
             <a-mixin id="cover" 
                 geometry="primitive: cylinder; radius: 1; height: 1.5"
                 material="color: #32CD32; roughness: 0.8"
-                static-body></a-mixin>
+                safe-physics="type: static; shape: cylinder"></a-mixin>
         </a-assets>
 
         <!-- Iluminação -->
@@ -137,15 +140,14 @@
         <!-- Arena Principal (Adaptada para AR) -->
         <a-entity id="arena" scale="0.5 0.5 0.5">
             <!-- Chão da Arena (Semi-transparente para AR) -->
-            <a-plane 
-                id="ground"
-                position="0 0.01 0" 
+            <a-plane id="ground" 
+                position="0 0 0" 
                 rotation="-90 0 0" 
                 width="40" 
                 height="40" 
                 color="#4CAF50"
                 material="src: #ground-texture; repeat: 10 10; roughness: 0.8; transparent: true; opacity: 0.3"
-                static-body
+                safe-physics="type: static; shape: box"
                 shadow="receive: true"
                 class="ar-arena-element">
             </a-plane>
@@ -153,22 +155,22 @@
             <!-- Paredes (Semi-transparentes para AR) -->
             <a-box id="wall-north" position="0 2 20" width="40" height="4" depth="1" 
                 material="src: #wall-texture; repeat: 8 1; roughness: 0.9; transparent: true; opacity: 0.6" 
-                static-body
+                safe-physics="type: static; shape: box"
                 shadow="cast: true; receive: true"
                 class="ar-arena-element interactive"></a-box>
             <a-box id="wall-south" position="0 2 -20" width="40" height="4" depth="1" 
                 material="src: #wall-texture; repeat: 8 1; roughness: 0.9; transparent: true; opacity: 0.6" 
-                static-body
+                safe-physics="type: static; shape: box"
                 shadow="cast: true; receive: true"
                 class="ar-arena-element interactive"></a-box>
             <a-box id="wall-east" position="20 2 0" width="1" height="4" depth="40" 
                 material="src: #wall-texture; repeat: 8 1; roughness: 0.9; transparent: true; opacity: 0.6" 
-                static-body
+                safe-physics="type: static; shape: box"
                 shadow="cast: true; receive: true"
                 class="ar-arena-element interactive"></a-box>
             <a-box id="wall-west" position="-20 2 0" width="1" height="4" depth="40" 
                 material="src: #wall-texture; repeat: 8 1; roughness: 0.9; transparent: true; opacity: 0.6" 
-                static-body
+                safe-physics="type: static; shape: box"
                 shadow="cast: true; receive: true"
                 class="ar-arena-element interactive"></a-box>
             
@@ -332,7 +334,6 @@
             <!-- Quest 3 Hand Tracking Controls -->
             <a-entity id="leftHand" 
                 quest-hand-tracking="hand: left; showHandModel: true; hapticFeedback: true"
-                hand-tracking-controls="hand: left; modelStyle: mesh; modelColor: #FFE0BD"
                 laser-controls="hand: left"
                 raycaster="objects: .interactive; far: 10; lineColor: #0000FF; lineOpacity: 0.5"
                 line="color: blue; opacity: 0.75"
@@ -343,7 +344,6 @@
             
             <a-entity id="rightHand" 
                 quest-hand-tracking="hand: right; showHandModel: true; hapticFeedback: true; shootGesture: point; reloadGesture: fist; interactGesture: pinch"
-                hand-tracking-controls="hand: right; modelStyle: mesh; modelColor: #FFE0BD"
                 laser-controls="hand: right"
                 raycaster="objects: .interactive; far: 10; lineColor: #FF0000; lineOpacity: 0.5"
                 line="color: red; opacity: 0.75"

@@ -137,7 +137,7 @@ AFRAME.registerComponent('ar-manager', {
         instructionEl.setAttribute('position', '0 2 -3');
         instructionEl.setAttribute('align', 'center');
         instructionEl.setAttribute('color', '#FFFFFF');
-        instructionEl.setAttribute('background', 'color: rgba(0,0,0,0.7); padding: 0.2');
+        instructionEl.setAttribute('background', 'color: #000000; opacity: 0.7; padding: 0.2');
         instructionEl.setAttribute('scale', '1.5 1.5 1.5');
         
         this.el.sceneEl.appendChild(instructionEl);
@@ -251,7 +251,7 @@ AFRAME.registerComponent('ar-manager', {
         confirmEl.setAttribute('position', '0 2 -2');
         confirmEl.setAttribute('align', 'center');
         confirmEl.setAttribute('color', '#00FF00');
-        confirmEl.setAttribute('background', 'color: rgba(0,0,0,0.8); padding: 0.2');
+        confirmEl.setAttribute('background', 'color: #000000; opacity: 0.8; padding: 0.2');
         confirmEl.setAttribute('scale', '1.2 1.2 1.2');
         
         this.el.sceneEl.appendChild(confirmEl);

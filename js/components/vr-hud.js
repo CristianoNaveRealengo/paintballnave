@@ -90,7 +90,7 @@ AFRAME.registerComponent('vr-hud', {
             position: '0 0.5 -2.5',
             width: 3,
             height: 1,
-            color: config.backgroundColor || 'rgba(0,0,0,0.7)',
+            color: config.backgroundColor || '#000000',
             opacity: this.data.opacity
         });
 
@@ -344,10 +344,31 @@ AFRAME.registerComponent('vr-hud', {
         // Tornar elementos mais transparentes
         const panels = this.hudContainer.querySelectorAll('[material]');
         panels.forEach(panel => {
-            const material = panel.getAttribute('material');
-            material.opacity = material.opacity * arConfig.hudOpacity;
-            panel.setAttribute('material', material);
+            try {
+                // Aguardar elemento estar totalmente carregado
+                if (!panel.hasLoaded) {
+                    panel.addEventListener('loaded', () => {
+                        this.updatePanelMaterial(panel, arConfig.hudOpacity);
+                    });
+                } else {
+                    this.updatePanelMaterial(panel, arConfig.hudOpacity);
+                }
+            } catch (error) {
+                console.warn('Erro ao atualizar material do painel:', error);
+            }
         });
+    },
+
+    updatePanelMaterial: function(panel, opacityMultiplier) {
+        try {
+            const material = panel.getAttribute('material');
+            if (material && typeof material === 'object') {
+                material.opacity = (material.opacity || 1.0) * opacityMultiplier;
+                panel.setAttribute('material', material);
+            }
+        } catch (error) {
+            console.warn('Erro ao atualizar material:', error);
+        }
     },
 
     startUpdates: function() {
@@ -397,9 +418,15 @@ AFRAME.registerComponent('vr-hud', {
                 color = '#FFFF00'; // Amarelo
             }
             
-            const material = healthBar.getAttribute('material');
-            material.color = color;
-            healthBar.setAttribute('material', material);
+            try {
+                const material = healthBar.getAttribute('material');
+                if (material && typeof material === 'object') {
+                    material.color = color;
+                    healthBar.setAttribute('material', material);
+                }
+            } catch (error) {
+                console.warn('Erro ao atualizar material da barra de vida:', error);
+            }
             
             // Atualizar largura da barra
             healthBar.setAttribute('width', 0.8 * (healthPercent / 100));
@@ -438,9 +465,15 @@ AFRAME.registerComponent('vr-hud', {
         const connectionIndicator = this.hudContainer.querySelector('#connection-indicator');
         if (connectionIndicator) {
             const isConnected = this.isNetworkConnected();
-            const material = connectionIndicator.getAttribute('material');
-            material.color = isConnected ? '#00FF00' : '#FF0000';
-            connectionIndicator.setAttribute('material', material);
+            try {
+                const material = connectionIndicator.getAttribute('material');
+                if (material && typeof material === 'object') {
+                    material.color = isConnected ? '#00FF00' : '#FF0000';
+                    connectionIndicator.setAttribute('material', material);
+                }
+            } catch (error) {
+                console.warn('Erro ao atualizar material do indicador de conexão:', error);
+            }
         }
 
         // Atualizar FPS
@@ -545,8 +578,10 @@ AFRAME.registerComponent('vr-hud', {
         const elements = this.hudContainer.querySelectorAll('[material]');
         elements.forEach(element => {
             const material = element.getAttribute('material');
-            material.opacity = this.data.opacity;
-            element.setAttribute('material', material);
+            if (material && typeof material === 'object') {
+                material.opacity = this.data.opacity;
+                element.setAttribute('material', material);
+            }
         });
     },
 

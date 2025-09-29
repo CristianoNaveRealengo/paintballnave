@@ -46,15 +46,7 @@ AFRAME.registerComponent('quest-hand-tracking', {
             thumbsUp: false
         };
         
-        // Configurar hand tracking
-        this.setupHandTracking();
-        
-        // Configurar modelo visual da mão
-        if (this.data.showHandModel) {
-            this.setupHandModel();
-        }
-        
-        // Configurar eventos
+        // Configurar eventos genéricos (gestos customizados, pinch)
         this.setupEventListeners();
         
         console.log(`👋 Quest Hand Tracking inicializado para mão ${this.data.hand}`);
@@ -93,8 +85,7 @@ AFRAME.registerComponent('quest-hand-tracking', {
     },
 
     setupEventListeners: function() {
-        // Eventos de hand tracking
-        this.el.addEventListener('hand-tracking-extras-ready', this.onHandTrackingReady.bind(this));
+        // Eventos de hand tracking (o listener de extras-ready é adicionado após init seguro)
         this.el.addEventListener('pinchstarted', this.onPinchStart.bind(this));
         this.el.addEventListener('pinchended', this.onPinchEnd.bind(this));
         

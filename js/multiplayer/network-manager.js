@@ -21,8 +21,13 @@ class NetworkManager {
             // Conectar ao servidor Socket.io
             this.socket = io(window.location.origin, {
                 transports: ['websocket', 'polling'],
-                timeout: 5000,
-                forceNew: true
+                timeout: 10000, // Aumentado para 10 segundos
+                forceNew: true,
+                reconnection: true, // Habilitar reconexão automática
+                reconnectionDelay: 1000, // Delay inicial de 1 segundo
+                reconnectionDelayMax: 5000, // Delay máximo de 5 segundos
+                maxReconnectionAttempts: 10, // Máximo de 10 tentativas
+                randomizationFactor: 0.5 // Randomização para evitar thundering herd
             });
 
             this.setupEventListeners();
@@ -37,9 +42,14 @@ class NetworkManager {
         // Eventos de conexão
         this.socket.on('connect', () => {
             console.log('✅ Conectado ao servidor');
+            console.log('🔗 Socket ID:', this.socket.id);
+            console.log('🌐 Transport:', this.socket.io.engine.transport.name);
             this.isConnected = true;
             this.playerId = this.socket.id;
             this.reconnectAttempts = 0;
+            
+            // Esconder mensagem de erro se existir
+            this.hideConnectionError();
             
             // Entrar no jogo automaticamente
             this.joinGame();
@@ -47,17 +57,40 @@ class NetworkManager {
 
         this.socket.on('disconnect', (reason) => {
             console.log('❌ Desconectado do servidor:', reason);
+            console.log('🔍 Detalhes da desconexão:', {
+                reason,
+                connected: this.socket.connected,
+                disconnected: this.socket.disconnected
+            });
             this.isConnected = false;
             
-            if (reason === 'io server disconnect') {
-                // Servidor desconectou, tentar reconectar
+            // Mostrar notificação de desconexão
+            this.showDisconnectionNotice(reason);
+            
+            if (reason === 'io server disconnect' || reason === 'transport close') {
+                // Servidor desconectou ou transporte fechou, tentar reconectar
+                console.log('🔄 Iniciando processo de reconexão...');
                 this.handleReconnect();
             }
         });
 
         this.socket.on('connect_error', (error) => {
             console.error('❌ Erro de conexão:', error);
+            console.error('🔍 Detalhes do erro:', {
+                message: error.message,
+                type: error.type,
+                description: error.description
+            });
             this.handleReconnect();
+        });
+
+        // Monitorar mudanças de transporte
+        this.socket.io.on('upgrade', () => {
+            console.log('⬆️ Upgrade de transporte para:', this.socket.io.engine.transport.name);
+        });
+
+        this.socket.io.on('upgradeError', (error) => {
+            console.warn('⚠️ Erro no upgrade de transporte:', error);
         });
 
         // Eventos do jogo
@@ -137,8 +170,12 @@ class NetworkManager {
     }
 
     showConnectionError() {
+        // Remover mensagem anterior se existir
+        this.hideConnectionError();
+        
         // Mostrar mensagem de erro de conexão
         const errorDiv = document.createElement('div');
+        errorDiv.id = 'connectionError';
         errorDiv.style.cssText = `
             position: fixed;
             top: 50%;
@@ -160,6 +197,82 @@ class NetworkManager {
             </button>
         `;
         document.body.appendChild(errorDiv);
+    }
+
+    hideConnectionError() {
+        // Remover mensagem de erro se existir
+        const errorDiv = document.querySelector('#connectionError');
+        if (errorDiv) {
+            errorDiv.remove();
+        }
+        
+        // Remover notificação de desconexão se existir
+        const disconnectionNotice = document.querySelector('#disconnectionNotice');
+        if (disconnectionNotice) {
+            disconnectionNotice.remove();
+        }
+    }
+
+    showDisconnectionNotice(reason) {
+        // Remover notificação anterior se existir
+        const existingNotice = document.querySelector('#disconnectionNotice');
+        if (existingNotice) {
+            existingNotice.remove();
+        }
+
+        // Criar notificação de desconexão
+        const notice = document.createElement('div');
+        notice.id = 'disconnectionNotice';
+        notice.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 165, 0, 0.9);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            z-index: 1500;
+            font-family: Arial, sans-serif;
+            max-width: 300px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        `;
+
+        // Traduzir motivo da desconexão
+        let reasonText = reason;
+        switch(reason) {
+            case 'transport close':
+                reasonText = 'Conexão perdida';
+                break;
+            case 'io server disconnect':
+                reasonText = 'Servidor desconectou';
+                break;
+            case 'ping timeout':
+                reasonText = 'Timeout de conexão';
+                break;
+            case 'transport error':
+                reasonText = 'Erro de transporte';
+                break;
+        }
+
+        notice.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 20px;">⚠️</span>
+                <div>
+                    <div style="font-weight: bold;">Desconectado</div>
+                    <div style="font-size: 12px;">${reasonText}</div>
+                    <div style="font-size: 11px; margin-top: 5px;">Tentando reconectar...</div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(notice);
+
+        // Remover automaticamente após 10 segundos
+        setTimeout(() => {
+            if (notice.parentNode) {
+                notice.remove();
+            }
+        }, 10000);
     }
 
     joinGame() {

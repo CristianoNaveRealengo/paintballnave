@@ -631,10 +631,17 @@ AFRAME.registerComponent('projectile-effects', {
     tick: function() {
         // Atualizar trail se necessário
         if (this.trail) {
-            // Fade out gradual
-            const currentOpacity = this.trail.getAttribute('material').opacity;
-            if (currentOpacity > 0) {
-                this.trail.setAttribute('material', 'opacity', currentOpacity * 0.95);
+            try {
+                // Fade out gradual
+                const material = this.trail.getAttribute('material');
+                if (material && typeof material === 'object') {
+                    const currentOpacity = material.opacity;
+                    if (currentOpacity > 0) {
+                        this.trail.setAttribute('material', 'opacity', currentOpacity * 0.95);
+                    }
+                }
+            } catch (error) {
+                console.warn('Erro ao atualizar material do trail:', error);
             }
         }
     }
