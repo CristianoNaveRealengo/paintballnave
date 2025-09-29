@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="utf-8">
+		<title>Teste de Tiros - Paintball VR</title>
+		<script src="libs/aframe-core.min.js"></script>
+		<script src="libs/aframe-physics-system.min.js"></script>
+		<script src="js/components/weapon-system.js"></script>
+		<script src="js/components/player-controller.js"></script>
+	</head>
+
+	<body>
+		<a-scene background="color: #87CEEB" physics="driver: cannon; debug: false">
+			<!-- Iluminação -->
+			<a-light type="ambient" color="#404040" intensity="0.4"></a-light>
+			<a-light type="directional" position="10 20 10" color="#ffffff" intensity="0.8"></a-light>
+
+			<!-- Chão -->
+			<a-plane position="0 0 0" rotation="-90 0 0" width="20" height="20" color="#4CAF50" static-body
+				shadow="receive: true"></a-plane>
+
+			<!-- Alvo -->
+			<a-box position="0 1 -5" width="2" height="2" depth="0.5" color="#FF0000" static-body
+				shadow="cast: true; receive: true"></a-box>
+
+			<!-- Jogador -->
+			<a-entity id="player" position="0 1.6 0" weapon-system="weaponType: pistol" player-controller="team: blue">
+
+				<a-camera look-controls wasd-controls>
+					<!-- Crosshair -->
+					<a-ring position="0 0 -1" radius-inner="0.005" radius-outer="0.01" color="#00FF00"
+						material="shader: flat"></a-ring>
+
+					<!-- Instruções -->
+					<a-text position="0 0.3 -1" value="Clique para atirar\nWSAD para mover" align="center"
+						color="#FFFFFF" scale="0.5 0.5 0.5"></a-text>
+				</a-camera>
+			</a-entity>
+
+			<!-- Container para projéteis -->
+			<a-entity id="projectiles"></a-entity>
+
+			<!-- Container para efeitos -->
+			<a-entity id="effects"></a-entity>
+		</a-scene>
+
+		<script>
+			// Simular network manager básico
+			window.networkManager = {
+				playerId: 'test_player_123',
+				shoot: function (data) {
+					console.log('Tiro enviado:', data);
+				},
+				reportHit: function (data) {
+					console.log('Hit reportado:', data);
+				}
+			};
+
+			// Log para debug
+			console.log('🎯 Teste de tiros carregado');
+			console.log('Clique na tela para atirar');
+		</script>
+	</body>
+
+</html>

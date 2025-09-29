@@ -262,7 +262,7 @@ class GameInitializer {
 			];
 
 			// Configurar para AR
-			scene.setAttribute("background", "color", "transparent");
+			scene.setAttribute("background", "transparent", true);
 			scene.setAttribute("ar-manager", {
 				planeDetection: true,
 				autoAnchor: true,
@@ -293,22 +293,27 @@ class GameInitializer {
 	initPhysicsSystem(scene) {
 		try {
 			// Verificar se CANNON está disponível
-			if (typeof CANNON !== 'undefined' || (window.AFRAME && window.AFRAME.physics)) {
-				scene.setAttribute('physics', {
-					driver: 'cannon',
+			if (
+				typeof CANNON !== "undefined" ||
+				(window.AFRAME && window.AFRAME.physics)
+			) {
+				scene.setAttribute("physics", {
+					driver: "cannon",
 					debug: false,
-					gravity: '0 -9.8 0'
+					gravity: "0 -9.8 0",
 				});
-				console.log('✅ Sistema de física CANNON inicializado');
+				console.log("✅ Sistema de física CANNON inicializado");
 			} else {
-				console.warn('⚠️ CANNON.js não encontrado, tentando novamente...');
+				console.warn(
+					"⚠️ CANNON.js não encontrado, tentando novamente..."
+				);
 				// Tentar novamente após mais tempo
 				setTimeout(() => {
 					this.initPhysicsSystem(scene);
 				}, 1000);
 			}
 		} catch (error) {
-			console.error('Erro ao inicializar física:', error);
+			console.error("Erro ao inicializar física:", error);
 		}
 
 		// Aplicar configurações AR se necessário

@@ -1,0 +1,81 @@
+{
+	"gameInfo": {
+		"name": "Paintball VR",
+		"version": "1.0.0",
+		"description": "Jogo de paintball multiplayer em realidade virtual",
+		"maxPlayers": 8,
+		"minPlayers": 2
+	},
+	"gameplay": {
+		"gameDuration": 300,
+		"playerHealth": 100,
+		"respawnTime": 3,
+		"infiniteAmmo": true,
+		"friendlyFire": false
+	},
+	"paintSystem": {
+		"colors": [
+			{ "name": "Rosa Neon", "hex": "#FF0066" },
+			{ "name": "Azul Elétrico", "hex": "#0066FF" },
+			{ "name": "Verde Limão", "hex": "#00FF66" },
+			{ "name": "Laranja Vibrante", "hex": "#FF6600" },
+			{ "name": "Roxo Místico", "hex": "#6600FF" },
+			{ "name": "Amarelo Solar", "hex": "#FFFF00" },
+			{ "name": "Vermelho Fogo", "hex": "#FF0000" },
+			{ "name": "Ciano Cristal", "hex": "#00FFFF" }
+		],
+		"paintFadeTime": 30000,
+		"splashRadius": 0.5
+	},
+	"weapons": {
+		"pistol": {
+			"name": "Pistola de Tinta",
+			"damage": 25,
+			"fireRate": 300,
+			"range": 50,
+			"accuracy": 0.95,
+			"projectileSpeed": 80
+		},
+		"sniper": {
+			"name": "Sniper de Tinta",
+			"damage": 50,
+			"fireRate": 1500,
+			"range": 100,
+			"accuracy": 0.98,
+			"projectileSpeed": 120
+		}
+	},
+	"scoring": {
+		"hitPoints": 10,
+		"killBonus": 50,
+		"streakBonuses": {
+			"3": 30,
+			"5": 60,
+			"10": 120
+		},
+		"paintMultiplier": 1.2
+	},
+	"arena": {
+		"size": { "x": 40, "z": 40 },
+		"wallHeight": 4,
+		"obstacles": true,
+		"lighting": "dynamic"
+	},
+	"vr": {
+		"handTracking": true,
+		"hapticFeedback": true,
+		"roomScale": true,
+		"teleportation": false
+	},
+	"audio": {
+		"masterVolume": 1.0,
+		"sfxVolume": 0.8,
+		"spatialAudio": true
+	},
+	"graphics": {
+		"shadows": true,
+		"particles": true,
+		"antiAliasing": true,
+		"targetFPS": 90
+	}
+}

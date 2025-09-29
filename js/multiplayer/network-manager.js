@@ -1,182 +1,189 @@
 // Gerenciador de rede para multiplayer
 class NetworkManager {
-    constructor() {
-        this.socket = null;
-        this.playerId = null;
-        this.players = new Map();
-        this.isConnected = false;
-        this.reconnectAttempts = 0;
-        this.maxReconnectAttempts = 5;
-        
-        this.init();
-    }
+	constructor() {
+		this.socket = null;
+		this.playerId = null;
+		this.players = new Map();
+		this.isConnected = false;
+		this.reconnectAttempts = 0;
+		this.maxReconnectAttempts = 5;
 
-    init() {
-        console.log('🌐 Inicializando NetworkManager...');
-        this.connect();
-    }
+		this.init();
+	}
 
-    connect() {
-        try {
-            // Conectar ao servidor Socket.io
-            this.socket = io(window.location.origin, {
-                transports: ['websocket', 'polling'],
-                timeout: 10000, // Aumentado para 10 segundos
-                forceNew: true,
-                reconnection: true, // Habilitar reconexão automática
-                reconnectionDelay: 1000, // Delay inicial de 1 segundo
-                reconnectionDelayMax: 5000, // Delay máximo de 5 segundos
-                maxReconnectionAttempts: 10, // Máximo de 10 tentativas
-                randomizationFactor: 0.5 // Randomização para evitar thundering herd
-            });
+	init() {
+		console.log("🌐 Inicializando NetworkManager...");
+		this.connect();
+	}
 
-            this.setupEventListeners();
-            
-        } catch (error) {
-            console.error('❌ Erro ao conectar:', error);
-            this.handleReconnect();
-        }
-    }
+	connect() {
+		try {
+			// Conectar ao servidor Socket.io
+			this.socket = io(window.location.origin, {
+				transports: ["websocket", "polling"],
+				timeout: 10000, // Aumentado para 10 segundos
+				forceNew: true,
+				reconnection: true, // Habilitar reconexão automática
+				reconnectionDelay: 1000, // Delay inicial de 1 segundo
+				reconnectionDelayMax: 5000, // Delay máximo de 5 segundos
+				maxReconnectionAttempts: 10, // Máximo de 10 tentativas
+				randomizationFactor: 0.5, // Randomização para evitar thundering herd
+			});
 
-    setupEventListeners() {
-        // Eventos de conexão
-        this.socket.on('connect', () => {
-            console.log('✅ Conectado ao servidor');
-            console.log('🔗 Socket ID:', this.socket.id);
-            console.log('🌐 Transport:', this.socket.io.engine.transport.name);
-            this.isConnected = true;
-            this.playerId = this.socket.id;
-            this.reconnectAttempts = 0;
-            
-            // Esconder mensagem de erro se existir
-            this.hideConnectionError();
-            
-            // Entrar no jogo automaticamente
-            this.joinGame();
-        });
+			this.setupEventListeners();
+		} catch (error) {
+			console.error("❌ Erro ao conectar:", error);
+			this.handleReconnect();
+		}
+	}
 
-        this.socket.on('disconnect', (reason) => {
-            console.log('❌ Desconectado do servidor:', reason);
-            console.log('🔍 Detalhes da desconexão:', {
-                reason,
-                connected: this.socket.connected,
-                disconnected: this.socket.disconnected
-            });
-            this.isConnected = false;
-            
-            // Mostrar notificação de desconexão
-            this.showDisconnectionNotice(reason);
-            
-            if (reason === 'io server disconnect' || reason === 'transport close') {
-                // Servidor desconectou ou transporte fechou, tentar reconectar
-                console.log('🔄 Iniciando processo de reconexão...');
-                this.handleReconnect();
-            }
-        });
+	setupEventListeners() {
+		// Eventos de conexão
+		this.socket.on("connect", () => {
+			console.log("✅ Conectado ao servidor");
+			console.log("🔗 Socket ID:", this.socket.id);
+			console.log("🌐 Transport:", this.socket.io.engine.transport.name);
+			this.isConnected = true;
+			this.playerId = this.socket.id;
+			this.reconnectAttempts = 0;
 
-        this.socket.on('connect_error', (error) => {
-            console.error('❌ Erro de conexão:', error);
-            console.error('🔍 Detalhes do erro:', {
-                message: error.message,
-                type: error.type,
-                description: error.description
-            });
-            this.handleReconnect();
-        });
+			// Esconder mensagem de erro se existir
+			this.hideConnectionError();
 
-        // Monitorar mudanças de transporte
-        this.socket.io.on('upgrade', () => {
-            console.log('⬆️ Upgrade de transporte para:', this.socket.io.engine.transport.name);
-        });
+			// Entrar no jogo automaticamente
+			this.joinGame();
+		});
 
-        this.socket.io.on('upgradeError', (error) => {
-            console.warn('⚠️ Erro no upgrade de transporte:', error);
-        });
+		this.socket.on("disconnect", (reason) => {
+			console.log("❌ Desconectado do servidor:", reason);
+			console.log("🔍 Detalhes da desconexão:", {
+				reason,
+				connected: this.socket.connected,
+				disconnected: this.socket.disconnected,
+			});
+			this.isConnected = false;
 
-        // Eventos do jogo
-        this.socket.on('playerJoined', (data) => {
-            this.handlePlayerJoined(data);
-        });
+			// Mostrar notificação de desconexão
+			this.showDisconnectionNotice(reason);
 
-        this.socket.on('playerConnected', (player) => {
-            this.handlePlayerConnected(player);
-        });
+			if (
+				reason === "io server disconnect" ||
+				reason === "transport close"
+			) {
+				// Servidor desconectou ou transporte fechou, tentar reconectar
+				console.log("🔄 Iniciando processo de reconexão...");
+				this.handleReconnect();
+			}
+		});
 
-        this.socket.on('playerDisconnected', (playerId) => {
-            this.handlePlayerDisconnected(playerId);
-        });
+		this.socket.on("connect_error", (error) => {
+			console.error("❌ Erro de conexão:", error);
+			console.error("🔍 Detalhes do erro:", {
+				message: error.message,
+				type: error.type,
+				description: error.description,
+			});
+			this.handleReconnect();
+		});
 
-        this.socket.on('playerMoved', (data) => {
-            this.handlePlayerMoved(data);
-        });
+		// Monitorar mudanças de transporte
+		this.socket.io.on("upgrade", () => {
+			console.log(
+				"⬆️ Upgrade de transporte para:",
+				this.socket.io.engine.transport.name
+			);
+		});
 
-        this.socket.on('projectileFired', (projectile) => {
-            this.handleProjectileFired(projectile);
-        });
+		this.socket.io.on("upgradeError", (error) => {
+			console.warn("⚠️ Erro no upgrade de transporte:", error);
+		});
 
-        this.socket.on('playerHit', (data) => {
-            this.handlePlayerHit(data);
-        });
+		// Eventos do jogo
+		this.socket.on("playerJoined", (data) => {
+			this.handlePlayerJoined(data);
+		});
 
-        this.socket.on('playerRespawned', (data) => {
-            this.handlePlayerRespawned(data);
-        });
+		this.socket.on("playerConnected", (player) => {
+			this.handlePlayerConnected(player);
+		});
 
-        this.socket.on('healthPackCollected', (data) => {
-            this.handleHealthPackCollected(data);
-        });
+		this.socket.on("playerDisconnected", (playerId) => {
+			this.handlePlayerDisconnected(playerId);
+		});
 
-        this.socket.on('healthPackRespawned', (packId) => {
-            this.handleHealthPackRespawned(packId);
-        });
+		this.socket.on("playerMoved", (data) => {
+			this.handlePlayerMoved(data);
+		});
 
-        this.socket.on('specialWeaponCollected', (data) => {
-            this.handleSpecialWeaponCollected(data);
-        });
+		this.socket.on("projectileFired", (projectile) => {
+			this.handleProjectileFired(projectile);
+		});
 
-        this.socket.on('specialWeaponRespawned', (weapon) => {
-            this.handleSpecialWeaponRespawned(weapon);
-        });
+		this.socket.on("playerHit", (data) => {
+			this.handlePlayerHit(data);
+		});
 
-        this.socket.on('gameStarted', (data) => {
-            this.handleGameStarted(data);
-        });
+		this.socket.on("playerRespawned", (data) => {
+			this.handlePlayerRespawned(data);
+		});
 
-        this.socket.on('gameEnded', (data) => {
-            this.handleGameEnded(data);
-        });
+		this.socket.on("healthPackCollected", (data) => {
+			this.handleHealthPackCollected(data);
+		});
 
-        this.socket.on('gamePaused', (message) => {
-            this.handleGamePaused(message);
-        });
+		this.socket.on("healthPackRespawned", (packId) => {
+			this.handleHealthPackRespawned(packId);
+		});
 
-        this.socket.on('timeUpdate', (timeLeft) => {
-            this.handleTimeUpdate(timeLeft);
-        });
-    }
+		this.socket.on("specialWeaponCollected", (data) => {
+			this.handleSpecialWeaponCollected(data);
+		});
 
-    handleReconnect() {
-        if (this.reconnectAttempts < this.maxReconnectAttempts) {
-            this.reconnectAttempts++;
-            console.log(`🔄 Tentativa de reconexão ${this.reconnectAttempts}/${this.maxReconnectAttempts}`);
-            
-            setTimeout(() => {
-                this.connect();
-            }, 2000 * this.reconnectAttempts);
-        } else {
-            console.error('❌ Máximo de tentativas de reconexão atingido');
-            this.showConnectionError();
-        }
-    }
+		this.socket.on("specialWeaponRespawned", (weapon) => {
+			this.handleSpecialWeaponRespawned(weapon);
+		});
 
-    showConnectionError() {
-        // Remover mensagem anterior se existir
-        this.hideConnectionError();
-        
-        // Mostrar mensagem de erro de conexão
-        const errorDiv = document.createElement('div');
-        errorDiv.id = 'connectionError';
-        errorDiv.style.cssText = `
+		this.socket.on("gameStarted", (data) => {
+			this.handleGameStarted(data);
+		});
+
+		this.socket.on("gameEnded", (data) => {
+			this.handleGameEnded(data);
+		});
+
+		this.socket.on("gamePaused", (message) => {
+			this.handleGamePaused(message);
+		});
+
+		this.socket.on("timeUpdate", (timeLeft) => {
+			this.handleTimeUpdate(timeLeft);
+		});
+	}
+
+	handleReconnect() {
+		if (this.reconnectAttempts < this.maxReconnectAttempts) {
+			this.reconnectAttempts++;
+			console.log(
+				`🔄 Tentativa de reconexão ${this.reconnectAttempts}/${this.maxReconnectAttempts}`
+			);
+
+			setTimeout(() => {
+				this.connect();
+			}, 2000 * this.reconnectAttempts);
+		} else {
+			console.error("❌ Máximo de tentativas de reconexão atingido");
+			this.showConnectionError();
+		}
+	}
+
+	showConnectionError() {
+		// Remover mensagem anterior se existir
+		this.hideConnectionError();
+
+		// Mostrar mensagem de erro de conexão
+		const errorDiv = document.createElement("div");
+		errorDiv.id = "connectionError";
+		errorDiv.style.cssText = `
             position: fixed;
             top: 50%;
             left: 50%;
@@ -189,41 +196,43 @@ class NetworkManager {
             z-index: 2000;
             font-family: Arial, sans-serif;
         `;
-        errorDiv.innerHTML = `
+		errorDiv.innerHTML = `
             <h3>❌ Erro de Conexão</h3>
             <p>Não foi possível conectar ao servidor.</p>
             <button onclick="location.reload()" style="padding: 10px 20px; margin-top: 10px;">
                 🔄 Tentar Novamente
             </button>
         `;
-        document.body.appendChild(errorDiv);
-    }
+		document.body.appendChild(errorDiv);
+	}
 
-    hideConnectionError() {
-        // Remover mensagem de erro se existir
-        const errorDiv = document.querySelector('#connectionError');
-        if (errorDiv) {
-            errorDiv.remove();
-        }
-        
-        // Remover notificação de desconexão se existir
-        const disconnectionNotice = document.querySelector('#disconnectionNotice');
-        if (disconnectionNotice) {
-            disconnectionNotice.remove();
-        }
-    }
+	hideConnectionError() {
+		// Remover mensagem de erro se existir
+		const errorDiv = document.querySelector("#connectionError");
+		if (errorDiv) {
+			errorDiv.remove();
+		}
 
-    showDisconnectionNotice(reason) {
-        // Remover notificação anterior se existir
-        const existingNotice = document.querySelector('#disconnectionNotice');
-        if (existingNotice) {
-            existingNotice.remove();
-        }
+		// Remover notificação de desconexão se existir
+		const disconnectionNotice = document.querySelector(
+			"#disconnectionNotice"
+		);
+		if (disconnectionNotice) {
+			disconnectionNotice.remove();
+		}
+	}
 
-        // Criar notificação de desconexão
-        const notice = document.createElement('div');
-        notice.id = 'disconnectionNotice';
-        notice.style.cssText = `
+	showDisconnectionNotice(reason) {
+		// Remover notificação anterior se existir
+		const existingNotice = document.querySelector("#disconnectionNotice");
+		if (existingNotice) {
+			existingNotice.remove();
+		}
+
+		// Criar notificação de desconexão
+		const notice = document.createElement("div");
+		notice.id = "disconnectionNotice";
+		notice.style.cssText = `
             position: fixed;
             top: 20px;
             right: 20px;
@@ -237,24 +246,24 @@ class NetworkManager {
             box-shadow: 0 4px 8px rgba(0,0,0,0.3);
         `;
 
-        // Traduzir motivo da desconexão
-        let reasonText = reason;
-        switch(reason) {
-            case 'transport close':
-                reasonText = 'Conexão perdida';
-                break;
-            case 'io server disconnect':
-                reasonText = 'Servidor desconectou';
-                break;
-            case 'ping timeout':
-                reasonText = 'Timeout de conexão';
-                break;
-            case 'transport error':
-                reasonText = 'Erro de transporte';
-                break;
-        }
+		// Traduzir motivo da desconexão
+		let reasonText = reason;
+		switch (reason) {
+			case "transport close":
+				reasonText = "Conexão perdida";
+				break;
+			case "io server disconnect":
+				reasonText = "Servidor desconectou";
+				break;
+			case "ping timeout":
+				reasonText = "Timeout de conexão";
+				break;
+			case "transport error":
+				reasonText = "Erro de transporte";
+				break;
+		}
 
-        notice.innerHTML = `
+		notice.innerHTML = `
             <div style="display: flex; align-items: center; gap: 10px;">
                 <span style="font-size: 20px;">⚠️</span>
                 <div>
@@ -265,461 +274,573 @@ class NetworkManager {
             </div>
         `;
 
-        document.body.appendChild(notice);
+		document.body.appendChild(notice);
 
-        // Remover automaticamente após 10 segundos
-        setTimeout(() => {
-            if (notice.parentNode) {
-                notice.remove();
-            }
-        }, 10000);
-    }
+		// Remover automaticamente após 10 segundos
+		setTimeout(() => {
+			if (notice.parentNode) {
+				notice.remove();
+			}
+		}, 10000);
+	}
 
-    joinGame() {
-        if (!this.isConnected) return;
+	joinGame() {
+		if (!this.isConnected) return;
 
-        const playerName = this.generatePlayerName();
-        
-        this.socket.emit('joinGame', {
-            name: playerName,
-            timestamp: Date.now()
-        });
+		const playerName = this.generatePlayerName();
 
-        console.log(`🎮 Entrando no jogo como: ${playerName}`);
-    }
+		this.socket.emit("joinGame", {
+			name: playerName,
+			timestamp: Date.now(),
+		});
 
-    generatePlayerName() {
-        const adjectives = ['Rápido', 'Preciso', 'Ninja', 'Sniper', 'Guerreiro', 'Atirador'];
-        const nouns = ['Azul', 'Vermelho', 'Verde', 'Dourado', 'Prateado', 'Negro'];
-        
-        const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
-        const noun = nouns[Math.floor(Math.random() * nouns.length)];
-        
-        return `${adj}${noun}${Math.floor(Math.random() * 100)}`;
-    }
+		console.log(`🎮 Entrando no jogo como: ${playerName}`);
+	}
 
-    // Métodos para enviar dados ao servidor
-    updatePosition(data) {
-        if (this.isConnected) {
-            this.socket.emit('playerMove', data);
-        }
-    }
+	generatePlayerName() {
+		const adjectives = [
+			"Rápido",
+			"Preciso",
+			"Ninja",
+			"Sniper",
+			"Guerreiro",
+			"Atirador",
+		];
+		const nouns = [
+			"Azul",
+			"Vermelho",
+			"Verde",
+			"Dourado",
+			"Prateado",
+			"Negro",
+		];
 
-    shoot(shootData) {
-        if (this.isConnected) {
-            this.socket.emit('shoot', shootData);
-        }
-    }
+		const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
+		const noun = nouns[Math.floor(Math.random() * nouns.length)];
 
-    reportHit(hitData) {
-        if (this.isConnected) {
-            this.socket.emit('hit', hitData);
-        }
-    }
+		return `${adj}${noun}${Math.floor(Math.random() * 100)}`;
+	}
 
-    collectHealthPack(packId) {
-        if (this.isConnected) {
-            this.socket.emit('collectHealthPack', { packId });
-        }
-    }
+	// Métodos para enviar dados ao servidor
+	updatePosition(data) {
+		if (this.isConnected) {
+			this.socket.emit("playerMove", data);
+		}
+	}
 
-    collectSpecialWeapon() {
-        if (this.isConnected) {
-            this.socket.emit('collectSpecialWeapon');
-        }
-    }
+	shoot(shootData) {
+		if (this.isConnected) {
+			this.socket.emit("shoot", shootData);
+		}
+	}
 
-    // Handlers para eventos recebidos do servidor
-    handlePlayerJoined(data) {
-        console.log('✅ Jogador entrou no jogo:', data.player.name);
-        
-        // Configurar jogador local
-        const playerRig = document.querySelector('#playerRig');
-        if (playerRig) {
-            const playerController = playerRig.components['player-controller'];
-            if (playerController) {
-                playerController.player = { ...data.player };
-                playerController.updateHealth(data.player.health);
-                playerController.updateScore(data.player.score);
-                
-                // Posicionar jogador
-                playerRig.setAttribute('position', data.player.position);
-            }
-        }
+	reportHit(hitData) {
+		if (this.isConnected) {
+			this.socket.emit("hit", hitData);
+		}
+	}
 
-        // Criar outros jogadores já conectados
-        data.gameState.players.forEach(player => {
-            if (player.id !== this.playerId) {
-                this.createOtherPlayer(player);
-            }
-        });
+	collectHealthPack(packId) {
+		if (this.isConnected) {
+			this.socket.emit("collectHealthPack", { packId });
+		}
+	}
 
-        // Atualizar estado do jogo
-        this.updateGameState(data.gameState);
-    }
+	collectSpecialWeapon() {
+		if (this.isConnected) {
+			this.socket.emit("collectSpecialWeapon");
+		}
+	}
 
-    handlePlayerConnected(player) {
-        console.log('👤 Novo jogador conectado:', player.name);
-        this.createOtherPlayer(player);
-    }
+	// Handlers para eventos recebidos do servidor
+	handlePlayerJoined(data) {
+		console.log("✅ Jogador entrou no jogo:", data.player.name);
 
-    handlePlayerDisconnected(playerId) {
-        console.log('👋 Jogador desconectado:', playerId);
-        this.removeOtherPlayer(playerId);
-    }
+		// Configurar jogador local
+		const playerRig = document.querySelector("#playerRig");
+		if (playerRig) {
+			const playerController = playerRig.components["player-controller"];
+			if (playerController) {
+				playerController.player = { ...data.player };
+				playerController.updateHealth(data.player.health);
+				playerController.updateScore(data.player.score);
 
-    handlePlayerMoved(data) {
-        const otherPlayer = document.querySelector(`#player_${data.playerId}`);
-        if (otherPlayer) {
-            otherPlayer.setAttribute('position', data.position);
-            
-            // Atualizar rotação da cabeça
-            const head = otherPlayer.querySelector('.player-head');
-            if (head) {
-                head.setAttribute('rotation', data.rotation);
-            }
-        }
-    }
+				// Posicionar jogador
+				playerRig.setAttribute("position", data.player.position);
+			}
+		}
 
-    handleProjectileFired(projectile) {
-        // Criar projétil visual apenas se não for do jogador local
-        if (projectile.playerId !== this.playerId) {
-            const weaponSystem = document.querySelector('[weapon-system]');
-            if (weaponSystem) {
-                weaponSystem.components['weapon-system'].createProjectile(projectile);
-            }
-        }
-    }
+		// Criar outros jogadores já conectados
+		data.gameState.players.forEach((player) => {
+			if (player.id !== this.playerId) {
+				this.createOtherPlayer(player);
+			}
+		});
 
-    handlePlayerHit(data) {
-        console.log('💥 Jogador atingido:', data);
-        
-        // Atualizar vida do jogador atingido
-        if (data.targetId === this.playerId) {
-            const playerRig = document.querySelector('#playerRig');
-            const playerController = playerRig?.components['player-controller'];
-            if (playerController) {
-                playerController.updateHealth(data.targetHealth);
-            }
-        }
+		// Atualizar estado do jogo
+		this.updateGameState(data.gameState);
+	}
 
-        // Atualizar pontuação do atirador
-        if (data.shooterId === this.playerId) {
-            const playerRig = document.querySelector('#playerRig');
-            const playerController = playerRig?.components['player-controller'];
-            if (playerController) {
-                playerController.updateScore(data.shooterScore);
-            }
-        }
+	handlePlayerConnected(player) {
+		console.log("👤 Novo jogador conectado:", player.name);
+		this.createOtherPlayer(player);
+	}
 
-        // Criar efeito visual de acerto
-        this.createHitEffect(data);
-    }
+	handlePlayerDisconnected(playerId) {
+		console.log("👋 Jogador desconectado:", playerId);
+		this.removeOtherPlayer(playerId);
+	}
 
-    handlePlayerRespawned(data) {
-        console.log('🔄 Jogador respawnou:', data.playerId);
-        
-        if (data.playerId === this.playerId) {
-            // Respawn do jogador local
-            const playerRig = document.querySelector('#playerRig');
-            if (playerRig) {
-                playerRig.setAttribute('position', data.position);
-                
-                const playerController = playerRig.components['player-controller'];
-                if (playerController) {
-                    playerController.updateHealth(data.health);
-                }
-            }
-        } else {
-            // Respawn de outro jogador
-            const otherPlayer = document.querySelector(`#player_${data.playerId}`);
-            if (otherPlayer) {
-                otherPlayer.setAttribute('position', data.position);
-                otherPlayer.setAttribute('visible', true);
-            }
-        }
-    }
+	handlePlayerMoved(data) {
+		const otherPlayer = document.querySelector(`#player_${data.playerId}`);
+		if (otherPlayer) {
+			otherPlayer.setAttribute("position", data.position);
 
-    handleHealthPackCollected(data) {
-        console.log('❤️ Health pack coletado:', data);
-        
-        // Esconder health pack
-        const healthPack = document.querySelector(`#${data.packId}`);
-        if (healthPack) {
-            healthPack.setAttribute('visible', false);
-        }
+			// Atualizar rotação da cabeça
+			const head = otherPlayer.querySelector(".player-head");
+			if (head) {
+				head.setAttribute("rotation", data.rotation);
+			}
+		}
+	}
 
-        // Atualizar vida se for o jogador local
-        if (data.playerId === this.playerId) {
-            const playerRig = document.querySelector('#playerRig');
-            const playerController = playerRig?.components['player-controller'];
-            if (playerController) {
-                playerController.updateHealth(data.newHealth);
-            }
-        }
-    }
+	handleProjectileFired(projectile) {
+		// Criar projétil visual apenas se não for do jogador local
+		if (projectile.playerId !== this.playerId) {
+			const weaponSystem = document.querySelector("[weapon-system]");
+			if (weaponSystem) {
+				weaponSystem.components["weapon-system"].createProjectile(
+					projectile
+				);
+			}
+		}
+	}
 
-    handleHealthPackRespawned(packId) {
-        console.log('❤️ Health pack respawnou:', packId);
-        
-        const healthPack = document.querySelector(`#${packId}`);
-        if (healthPack) {
-            healthPack.setAttribute('visible', true);
-            
-            // Efeito de respawn
-            healthPack.setAttribute('animation__respawn', {
-                property: 'scale',
-                from: '0 0 0',
-                to: '1 1 1',
-                dur: 500,
-                easing: 'easeOutBounce'
-            });
-        }
-    }
+	handlePlayerHit(data) {
+		console.log("🎨 Jogador atingido com tinta:", data);
 
-    handleSpecialWeaponCollected(data) {
-        console.log('🔫 Arma especial coletada:', data);
-        
-        // Esconder arma especial
-        const specialWeapon = document.querySelector('[special-weapon]');
-        if (specialWeapon) {
-            specialWeapon.setAttribute('visible', false);
-        }
+		// Atualizar vida do jogador atingido
+		if (data.targetId === this.playerId) {
+			const player = document.querySelector("#player");
+			const playerController = player?.components["player-controller"];
+			if (playerController) {
+				playerController.updateHealth(data.targetHealth);
+				// Aplicar cor da tinta no jogador local
+				if (data.paintColor) {
+					playerController.applyPaint(
+						data.paintColor,
+						data.shooterId
+					);
+				}
+			}
+		}
 
-        // Atualizar arma se for o jogador local
-        if (data.playerId === this.playerId) {
-            const playerRig = document.querySelector('#playerRig');
-            const playerController = playerRig?.components['player-controller'];
-            if (playerController) {
-                playerController.updateWeapon(data.weapon);
-            }
-        }
-    }
+		// Atualizar pontuação e acertos do atirador
+		if (data.shooterId === this.playerId) {
+			const player = document.querySelector("#player");
+			const playerController = player?.components["player-controller"];
+			if (playerController) {
+				playerController.updateScore(data.shooterScore);
+				playerController.updateHits(data.shooterHits);
+			}
 
-    handleSpecialWeaponRespawned(weapon) {
-        console.log('🔫 Arma especial respawnou:', weapon);
-        
-        const specialWeapon = document.querySelector('[special-weapon]');
-        if (specialWeapon) {
-            specialWeapon.setAttribute('visible', true);
-            
-            // Efeito de respawn
-            specialWeapon.setAttribute('animation__respawn', {
-                property: 'scale',
-                from: '0 0 0',
-                to: '1 1 1',
-                dur: 800,
-                easing: 'easeOutBounce'
-            });
-        }
-    }
+			// Mostrar pontos ganhos
+			this.showPointsGained(data.points);
+		}
 
-    handleGameStarted(data) {
-        console.log('🎮 Jogo iniciado!', data);
-        
-        // Esconder tela de loading
-        const loadingScreen = document.querySelector('#loadingScreen');
-        if (loadingScreen) {
-            loadingScreen.style.display = 'none';
-        }
+		// Atualizar cor de outros jogadores
+		if (data.targetId !== this.playerId) {
+			const otherPlayer = document.querySelector(
+				`#player_${data.targetId}`
+			);
+			if (otherPlayer && data.targetPaintColor) {
+				this.updateOtherPlayerColor(otherPlayer, data.targetPaintColor);
+			}
+		}
 
-        // Mostrar cena do jogo
-        const scene = document.querySelector('#scene');
-        if (scene) {
-            scene.style.display = 'block';
-        }
+		// Criar efeito visual de acerto
+		this.createHitEffect(data);
+	}
 
-        // Mostrar mensagem de início
-        this.showGameMessage('🎮 JOGO INICIADO!', 'green', 3000);
-    }
+	handlePlayerRespawned(data) {
+		console.log("🔄 Jogador respawnou:", data.playerId);
 
-    handleGameEnded(data) {
-        console.log('🏆 Jogo finalizado!', data);
-        
-        // Mostrar resultado
-        this.showGameResult(data);
-    }
+		if (data.playerId === this.playerId) {
+			// Respawn do jogador local
+			const playerRig = document.querySelector("#playerRig");
+			if (playerRig) {
+				playerRig.setAttribute("position", data.position);
 
-    handleGamePaused(message) {
-        console.log('⏸️ Jogo pausado:', message);
-        this.showGameMessage(`⏸️ ${message}`, 'orange', 5000);
-    }
+				const playerController =
+					playerRig.components["player-controller"];
+				if (playerController) {
+					playerController.updateHealth(data.health);
+				}
+			}
+		} else {
+			// Respawn de outro jogador
+			const otherPlayer = document.querySelector(
+				`#player_${data.playerId}`
+			);
+			if (otherPlayer) {
+				otherPlayer.setAttribute("position", data.position);
+				otherPlayer.setAttribute("visible", true);
+			}
+		}
+	}
 
-    handleTimeUpdate(timeLeft) {
-        // Atualizar timer no HUD
-        const timerText = document.querySelector('#timerText');
-        if (timerText) {
-            const minutes = Math.floor(timeLeft / 60);
-            const seconds = timeLeft % 60;
-            timerText.setAttribute('value', `TEMPO: ${minutes}:${seconds.toString().padStart(2, '0')}`);
-            
-            // Mudar cor quando tempo está acabando
-            if (timeLeft <= 30) {
-                timerText.setAttribute('color', 'red');
-            } else if (timeLeft <= 60) {
-                timerText.setAttribute('color', 'orange');
-            } else {
-                timerText.setAttribute('color', 'white');
-            }
-        }
-    }
+	handleHealthPackCollected(data) {
+		console.log("❤️ Health pack coletado:", data);
 
-    // Métodos auxiliares
-    createOtherPlayer(player) {
-        // Verificar se jogador já existe
-        if (document.querySelector(`#player_${player.id}`)) {
-            return;
-        }
+		// Esconder health pack
+		const healthPack = document.querySelector(`#${data.packId}`);
+		if (healthPack) {
+			healthPack.setAttribute("visible", false);
+		}
 
-        // Criar representação visual do outro jogador
-        const otherPlayer = document.createElement('a-entity');
-        otherPlayer.id = `player_${player.id}`;
-        otherPlayer.setAttribute('position', player.position);
+		// Atualizar vida se for o jogador local
+		if (data.playerId === this.playerId) {
+			const playerRig = document.querySelector("#playerRig");
+			const playerController = playerRig?.components["player-controller"];
+			if (playerController) {
+				playerController.updateHealth(data.newHealth);
+			}
+		}
+	}
 
-        // Corpo do jogador
-        const body = document.createElement('a-cylinder');
-        body.setAttribute('radius', '0.3');
-        body.setAttribute('height', '1.6');
-        body.setAttribute('color', player.team === 'blue' ? '#4169E1' : '#DC143C');
-        body.setAttribute('position', '0 0.8 0');
-        otherPlayer.appendChild(body);
+	handleHealthPackRespawned(packId) {
+		console.log("❤️ Health pack respawnou:", packId);
 
-        // Cabeça do jogador
-        const head = document.createElement('a-sphere');
-        head.setAttribute('radius', '0.2');
-        head.setAttribute('color', '#ffcccc');
-        head.setAttribute('position', '0 1.8 0');
-        head.classList.add('player-head');
-        otherPlayer.appendChild(head);
+		const healthPack = document.querySelector(`#${packId}`);
+		if (healthPack) {
+			healthPack.setAttribute("visible", true);
 
-        // Nome do jogador
-        const nameTag = document.createElement('a-text');
-        nameTag.setAttribute('value', player.name);
-        nameTag.setAttribute('position', '0 2.2 0');
-        nameTag.setAttribute('align', 'center');
-        nameTag.setAttribute('color', 'white');
-        nameTag.setAttribute('scale', '0.8 0.8 0.8');
-        otherPlayer.appendChild(nameTag);
+			// Efeito de respawn
+			healthPack.setAttribute("animation__respawn", {
+				property: "scale",
+				from: "0 0 0",
+				to: "1 1 1",
+				dur: 500,
+				easing: "easeOutBounce",
+			});
+		}
+	}
 
-        // Arma do jogador
-        const weapon = document.createElement('a-box');
-        weapon.setAttribute('width', '0.1');
-        weapon.setAttribute('height', '0.1');
-        weapon.setAttribute('depth', '0.6');
-        weapon.setAttribute('color', '#333');
-        weapon.setAttribute('position', '0.3 1.2 -0.3');
-        otherPlayer.appendChild(weapon);
+	handleSpecialWeaponCollected(data) {
+		console.log("🔫 Arma especial coletada:", data);
 
-        // Adicionar à cena
-        const otherPlayersContainer = document.querySelector('#otherPlayers');
-        if (otherPlayersContainer) {
-            otherPlayersContainer.appendChild(otherPlayer);
-        }
+		// Esconder arma especial
+		const specialWeapon = document.querySelector("[special-weapon]");
+		if (specialWeapon) {
+			specialWeapon.setAttribute("visible", false);
+		}
 
-        console.log(`👤 Jogador criado: ${player.name} (${player.team})`);
-    }
+		// Atualizar arma se for o jogador local
+		if (data.playerId === this.playerId) {
+			const playerRig = document.querySelector("#playerRig");
+			const playerController = playerRig?.components["player-controller"];
+			if (playerController) {
+				playerController.updateWeapon(data.weapon);
+			}
+		}
+	}
 
-    removeOtherPlayer(playerId) {
-        const otherPlayer = document.querySelector(`#player_${playerId}`);
-        if (otherPlayer && otherPlayer.parentNode) {
-            otherPlayer.parentNode.removeChild(otherPlayer);
-        }
-    }
+	handleSpecialWeaponRespawned(weapon) {
+		console.log("🔫 Arma especial respawnou:", weapon);
 
-    createHitEffect(data) {
-        // Criar efeito visual de acerto
-        const effect = document.createElement('a-text');
-        effect.setAttribute('value', `-${data.damage}`);
-        effect.setAttribute('color', 'red');
-        effect.setAttribute('scale', '2 2 2');
-        effect.setAttribute('align', 'center');
-        
-        // Posicionar próximo ao jogador atingido
-        const targetPlayer = document.querySelector(`#player_${data.targetId}`);
-        if (targetPlayer) {
-            const position = targetPlayer.getAttribute('position');
-            effect.setAttribute('position', `${position.x} ${position.y + 2.5} ${position.z}`);
-        }
+		const specialWeapon = document.querySelector("[special-weapon]");
+		if (specialWeapon) {
+			specialWeapon.setAttribute("visible", true);
 
-        // Animação de movimento e desaparecimento
-        effect.setAttribute('animation', {
-            property: 'position',
-            from: effect.getAttribute('position'),
-            to: `${effect.getAttribute('position').x} ${effect.getAttribute('position').y + 1} ${effect.getAttribute('position').z}`,
-            dur: 1000,
-            easing: 'easeOutQuad'
-        });
-        
-        effect.setAttribute('animation__fade', {
-            property: 'opacity',
-            from: '1',
-            to: '0',
-            dur: 1000,
-            easing: 'easeOutQuad'
-        });
+			// Efeito de respawn
+			specialWeapon.setAttribute("animation__respawn", {
+				property: "scale",
+				from: "0 0 0",
+				to: "1 1 1",
+				dur: 800,
+				easing: "easeOutBounce",
+			});
+		}
+	}
 
-        document.querySelector('a-scene').appendChild(effect);
-        
-        setTimeout(() => {
-            if (effect.parentNode) {
-                effect.parentNode.removeChild(effect);
-            }
-        }, 1100);
-    }
+	handleGameStarted(data) {
+		console.log("🎮 Jogo iniciado!", data);
 
-    updateGameState(gameState) {
-        // Atualizar health packs
-        gameState.healthPacks.forEach(pack => {
-            const healthPack = document.querySelector(`#${pack.id}`);
-            if (healthPack) {
-                healthPack.setAttribute('visible', pack.active);
-            }
-        });
+		// Esconder tela de loading
+		const loadingScreen = document.querySelector("#loadingScreen");
+		if (loadingScreen) {
+			loadingScreen.style.display = "none";
+		}
 
-        // Atualizar arma especial
-        const specialWeapon = document.querySelector('[special-weapon]');
-        if (specialWeapon) {
-            specialWeapon.setAttribute('visible', gameState.specialWeapon.active);
-        }
+		// Mostrar cena do jogo
+		const scene = document.querySelector("#scene");
+		if (scene) {
+			scene.style.display = "block";
+		}
 
-        // Atualizar timer
-        if (gameState.gameTime) {
-            this.handleTimeUpdate(gameState.gameTime);
-        }
-    }
+		// Mostrar mensagem de início
+		this.showGameMessage("🎮 JOGO INICIADO!", "green", 3000);
+	}
 
-    showGameMessage(message, color = 'white', duration = 3000) {
-        const messageEl = document.createElement('a-text');
-        messageEl.setAttribute('value', message);
-        messageEl.setAttribute('color', color);
-        messageEl.setAttribute('scale', '3 3 3');
-        messageEl.setAttribute('align', 'center');
-        messageEl.setAttribute('position', '0 2 -5');
-        
-        messageEl.setAttribute('animation', {
-            property: 'scale',
-            from: '0 0 0',
-            to: '3 3 3',
-            dur: 500,
-            easing: 'easeOutBounce'
-        });
+	handleGameEnded(data) {
+		console.log("🏆 Jogo finalizado!", data);
 
-        const camera = document.querySelector('#playerCamera');
-        if (camera) {
-            camera.appendChild(messageEl);
-        }
+		// Mostrar resultado
+		this.showGameResult(data);
+	}
 
-        setTimeout(() => {
-            if (messageEl.parentNode) {
-                messageEl.parentNode.removeChild(messageEl);
-            }
-        }, duration);
-    }
+	handleGamePaused(message) {
+		console.log("⏸️ Jogo pausado:", message);
+		this.showGameMessage(`⏸️ ${message}`, "orange", 5000);
+	}
 
-    showGameResult(data) {
-        // Criar tela de resultado
-        const resultScreen = document.createElement('div');
-        resultScreen.style.cssText = `
+	handleTimeUpdate(timeLeft) {
+		// Atualizar timer no HUD
+		const timerText = document.querySelector("#timerText");
+		if (timerText) {
+			const minutes = Math.floor(timeLeft / 60);
+			const seconds = timeLeft % 60;
+			timerText.setAttribute(
+				"value",
+				`TEMPO: ${minutes}:${seconds.toString().padStart(2, "0")}`
+			);
+
+			// Mudar cor quando tempo está acabando
+			if (timeLeft <= 30) {
+				timerText.setAttribute("color", "red");
+			} else if (timeLeft <= 60) {
+				timerText.setAttribute("color", "orange");
+			} else {
+				timerText.setAttribute("color", "white");
+			}
+		}
+	}
+
+	// Métodos auxiliares
+	showPointsGained(points) {
+		// Mostrar pontos ganhos na tela
+		const camera = document.querySelector('#camera');
+		if (!camera) return;
+
+		const pointsText = document.createElement('a-text');
+		pointsText.setAttribute('value', `+${points}`);
+		pointsText.setAttribute('color', '#00FF00');
+		pointsText.setAttribute('scale', '1.5 1.5 1.5');
+		pointsText.setAttribute('align', 'center');
+		pointsText.setAttribute('position', '0.3 0.1 -1');
+		
+		pointsText.setAttribute('animation', {
+			property: 'position',
+			from: '0.3 0.1 -1',
+			to: '0.3 0.3 -1',
+			dur: 1000,
+			easing: 'easeOutQuad'
+		});
+		
+		pointsText.setAttribute('animation__fade', {
+			property: 'opacity',
+			from: '1',
+			to: '0',
+			dur: 1000,
+			easing: 'easeOutQuad'
+		});
+
+		camera.appendChild(pointsText);
+		
+		setTimeout(() => {
+			if (pointsText.parentNode) {
+				pointsText.parentNode.removeChild(pointsText);
+			}
+		}, 1100);
+	},
+
+	updateOtherPlayerColor(playerElement, newColor) {
+		// Atualizar cor do corpo de outro jogador
+		const body = playerElement.querySelector('.player-body');
+		if (body) {
+			body.setAttribute('material', 'color', newColor);
+			
+			// Efeito visual de mudança de cor
+			body.setAttribute('animation__colorchange', {
+				property: 'scale',
+				from: '1 1 1',
+				to: '1.1 1.1 1.1',
+				dur: 300,
+				dir: 'alternate',
+				easing: 'easeInOutQuad'
+			});
+		}
+	},
+
+	createOtherPlayer(player) {
+		// Verificar se jogador já existe
+		if (document.querySelector(`#player_${player.id}`)) {
+			return;
+		}
+
+		// Criar representação visual do outro jogador
+		const otherPlayer = document.createElement("a-entity");
+		otherPlayer.id = `player_${player.id}`;
+		otherPlayer.setAttribute("position", player.position);
+
+		// Corpo do jogador com cor da tinta
+		const body = document.createElement("a-cylinder");
+		body.setAttribute("radius", "0.3");
+		body.setAttribute("height", "1.6");
+		body.setAttribute("color", player.paintColor || player.originalColor || "#4169E1");
+		body.setAttribute("material", {
+			color: player.paintColor || player.originalColor || "#4169E1",
+			metalness: 0.1,
+			roughness: 0.8
+		});
+		body.setAttribute("position", "0 0.8 0");
+		body.classList.add('player-body');
+		otherPlayer.appendChild(body);
+
+		// Cabeça do jogador
+		const head = document.createElement("a-sphere");
+		head.setAttribute("radius", "0.2");
+		head.setAttribute("color", "#ffcccc");
+		head.setAttribute("position", "0 1.8 0");
+		head.classList.add("player-head");
+		otherPlayer.appendChild(head);
+
+		// Nome do jogador
+		const nameTag = document.createElement("a-text");
+		nameTag.setAttribute("value", player.name);
+		nameTag.setAttribute("position", "0 2.2 0");
+		nameTag.setAttribute("align", "center");
+		nameTag.setAttribute("color", "white");
+		nameTag.setAttribute("scale", "0.8 0.8 0.8");
+		otherPlayer.appendChild(nameTag);
+
+		// Arma do jogador
+		const weapon = document.createElement("a-box");
+		weapon.setAttribute("width", "0.1");
+		weapon.setAttribute("height", "0.1");
+		weapon.setAttribute("depth", "0.6");
+		weapon.setAttribute("color", "#333");
+		weapon.setAttribute("position", "0.3 1.2 -0.3");
+		otherPlayer.appendChild(weapon);
+
+		// Adicionar à cena
+		const otherPlayersContainer = document.querySelector("#otherPlayers");
+		if (otherPlayersContainer) {
+			otherPlayersContainer.appendChild(otherPlayer);
+		}
+
+		console.log(`👤 Jogador criado: ${player.name} (${player.team})`);
+	}
+
+	removeOtherPlayer(playerId) {
+		const otherPlayer = document.querySelector(`#player_${playerId}`);
+		if (otherPlayer && otherPlayer.parentNode) {
+			otherPlayer.parentNode.removeChild(otherPlayer);
+		}
+	}
+
+	createHitEffect(data) {
+		// Criar efeito visual de acerto
+		const effect = document.createElement("a-text");
+		effect.setAttribute("value", `-${data.damage}`);
+		effect.setAttribute("color", "red");
+		effect.setAttribute("scale", "2 2 2");
+		effect.setAttribute("align", "center");
+
+		// Posicionar próximo ao jogador atingido
+		const targetPlayer = document.querySelector(`#player_${data.targetId}`);
+		if (targetPlayer) {
+			const position = targetPlayer.getAttribute("position");
+			effect.setAttribute(
+				"position",
+				`${position.x} ${position.y + 2.5} ${position.z}`
+			);
+		}
+
+		// Animação de movimento e desaparecimento
+		effect.setAttribute("animation", {
+			property: "position",
+			from: effect.getAttribute("position"),
+			to: `${effect.getAttribute("position").x} ${
+				effect.getAttribute("position").y + 1
+			} ${effect.getAttribute("position").z}`,
+			dur: 1000,
+			easing: "easeOutQuad",
+		});
+
+		effect.setAttribute("animation__fade", {
+			property: "opacity",
+			from: "1",
+			to: "0",
+			dur: 1000,
+			easing: "easeOutQuad",
+		});
+
+		document.querySelector("a-scene").appendChild(effect);
+
+		setTimeout(() => {
+			if (effect.parentNode) {
+				effect.parentNode.removeChild(effect);
+			}
+		}, 1100);
+	}
+
+	updateGameState(gameState) {
+		// Atualizar health packs
+		gameState.healthPacks.forEach((pack) => {
+			const healthPack = document.querySelector(`#${pack.id}`);
+			if (healthPack) {
+				healthPack.setAttribute("visible", pack.active);
+			}
+		});
+
+		// Atualizar arma especial
+		const specialWeapon = document.querySelector("[special-weapon]");
+		if (specialWeapon) {
+			specialWeapon.setAttribute(
+				"visible",
+				gameState.specialWeapon.active
+			);
+		}
+
+		// Atualizar timer
+		if (gameState.gameTime) {
+			this.handleTimeUpdate(gameState.gameTime);
+		}
+	}
+
+	showGameMessage(message, color = "white", duration = 3000) {
+		const messageEl = document.createElement("a-text");
+		messageEl.setAttribute("value", message);
+		messageEl.setAttribute("color", color);
+		messageEl.setAttribute("scale", "3 3 3");
+		messageEl.setAttribute("align", "center");
+		messageEl.setAttribute("position", "0 2 -5");
+
+		messageEl.setAttribute("animation", {
+			property: "scale",
+			from: "0 0 0",
+			to: "3 3 3",
+			dur: 500,
+			easing: "easeOutBounce",
+		});
+
+		const camera = document.querySelector("#playerCamera");
+		if (camera) {
+			camera.appendChild(messageEl);
+		}
+
+		setTimeout(() => {
+			if (messageEl.parentNode) {
+				messageEl.parentNode.removeChild(messageEl);
+			}
+		}, duration);
+	}
+
+	showGameResult(data) {
+		// Criar tela de resultado
+		const resultScreen = document.createElement("div");
+		resultScreen.style.cssText = `
             position: fixed;
             top: 0;
             left: 0;
@@ -736,16 +857,18 @@ class NetworkManager {
             text-align: center;
         `;
 
-        resultScreen.innerHTML = `
+		resultScreen.innerHTML = `
             <h1 style="font-size: 48px; margin-bottom: 20px;">🏆 JOGO FINALIZADO!</h1>
             <h2 style="font-size: 36px; color: gold; margin-bottom: 30px;">
                 Vencedor: ${data.winner.name}
             </h2>
             <div style="font-size: 24px; margin-bottom: 30px;">
                 <h3>📊 Pontuação Final:</h3>
-                ${data.finalScores.map(score => 
-                    `<p>${score.name}: ${score.score} pontos</p>`
-                ).join('')}
+                ${data.finalScores
+					.map(
+						(score) => `<p>${score.name}: ${score.score} pontos</p>`
+					)
+					.join("")}
             </div>
             <button onclick="location.reload()" 
                     style="padding: 15px 30px; font-size: 20px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">
@@ -753,11 +876,11 @@ class NetworkManager {
             </button>
         `;
 
-        document.body.appendChild(resultScreen);
-    }
+		document.body.appendChild(resultScreen);
+	}
 }
 
 // Inicializar NetworkManager quando a página carregar
-window.addEventListener('load', () => {
-    window.networkManager = new NetworkManager();
+window.addEventListener("load", () => {
+	window.networkManager = new NetworkManager();
 });
