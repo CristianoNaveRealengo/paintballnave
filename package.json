@@ -1,0 +1,35 @@
+{
+  "name": "paintball-vr",
+  "version": "1.0.0",
+  "description": "Jogo de Paintball Multiplayer em VR para Meta Quest 3",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "build": "echo 'Build completed'",
+    "test": "echo 'No tests specified'"
+  },
+  "keywords": [
+    "vr",
+    "paintball",
+    "multiplayer",
+    "aframe",
+    "meta-quest",
+    "webxr"
+  ],
+  "author": "Desenvolvedor VR",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.7.2",
+    "cors": "^2.8.5",
+    "helmet": "^7.0.0",
+    "compression": "^1.7.4"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

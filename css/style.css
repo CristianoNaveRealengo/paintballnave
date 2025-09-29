@@ -1,0 +1,771 @@
+/* Estilos principais do Paintball VR */
+
+/* Reset e configurações base */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Roboto', 'Arial', sans-serif;
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    color: #ffffff;
+    overflow: hidden;
+    user-select: none;
+}
+
+/* Loading Screen */
+.loading-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    transition: opacity 0.5s ease-out;
+}
+
+.loading-screen.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.loading-content {
+    text-align: center;
+    max-width: 90%;
+    width: 800px;
+}
+
+.game-title {
+    font-size: 3.5rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+    background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1);
+    background-size: 300% 300%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: gradientShift 3s ease-in-out infinite;
+}
+
+@keyframes gradientShift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+
+.game-subtitle {
+    font-size: 1.2rem;
+    color: #b0c4de;
+    margin-bottom: 2rem;
+    opacity: 0.8;
+}
+
+/* Mapa de preview */
+.map-preview {
+    width: 400px;
+    height: 300px;
+    background: #2c3e50;
+    border: 3px solid #34495e;
+    border-radius: 10px;
+    margin: 0 auto 2rem;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.map-grid {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: 
+        linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
+.map-element {
+    position: absolute;
+    border-radius: 3px;
+    transition: all 0.3s ease;
+}
+
+.map-element:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+.obstacle {
+    background: #8b4513;
+    border: 1px solid #a0522d;
+}
+
+.spawn-point {
+    background: #4ecdc4;
+    border: 2px solid #45b7d1;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+.spawn-point.blue {
+    background: #3498db;
+    border-color: #2980b9;
+}
+
+.spawn-point.red {
+    background: #e74c3c;
+    border-color: #c0392b;
+}
+
+.health-pack {
+    background: #2ecc71;
+    border: 2px solid #27ae60;
+    border-radius: 50%;
+    animation: healthPulse 1.5s infinite;
+}
+
+.special-weapon {
+    background: #f39c12;
+    border: 2px solid #e67e22;
+    animation: weaponGlow 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(1.2); }
+}
+
+@keyframes healthPulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 5px #2ecc71; }
+    50% { opacity: 0.8; box-shadow: 0 0 15px #2ecc71; }
+}
+
+@keyframes weaponGlow {
+    0%, 100% { box-shadow: 0 0 5px #f39c12; }
+    50% { box-shadow: 0 0 20px #f39c12, 0 0 30px #f39c12; }
+}
+
+/* Informações do jogo */
+.game-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin: 2rem 0;
+}
+
+.info-card {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    padding: 1rem;
+    backdrop-filter: blur(10px);
+    transition: transform 0.3s ease;
+}
+
+.info-card:hover {
+    transform: translateY(-5px);
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.info-card h3 {
+    color: #4ecdc4;
+    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+}
+
+.info-card p {
+    color: #b0c4de;
+    font-size: 0.9rem;
+}
+
+/* Controles VR */
+.vr-controls {
+    margin: 2rem 0;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.vr-controls h3 {
+    color: #ff6b6b;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.controls-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+}
+
+.control-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 5px;
+}
+
+.control-action {
+    color: #4ecdc4;
+    font-weight: 500;
+}
+
+.control-button {
+    color: #ffd700;
+    font-weight: bold;
+}
+
+/* Barra de loading */
+.loading-bar-container {
+    width: 100%;
+    max-width: 400px;
+    margin: 2rem auto;
+}
+
+.loading-bar {
+    width: 100%;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+}
+
+.loading-progress {
+    height: 100%;
+    background: linear-gradient(90deg, #4ecdc4, #45b7d1, #4ecdc4);
+    background-size: 200% 100%;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+    animation: loadingShimmer 2s infinite;
+}
+
+@keyframes loadingShimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+.loading-text {
+    text-align: center;
+    margin-top: 1rem;
+    color: #b0c4de;
+    font-size: 1rem;
+}
+
+.loading-percentage {
+    color: #4ecdc4;
+    font-weight: bold;
+}
+
+/* HUD Elements */
+.hud-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 100;
+}
+
+.health-bar {
+    position: absolute;
+    bottom: 50px;
+    left: 50px;
+    width: 200px;
+    height: 20px;
+    background: rgba(0, 0, 0, 0.7);
+    border: 2px solid #ffffff;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.health-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #e74c3c, #f39c12, #2ecc71);
+    transition: width 0.3s ease;
+    border-radius: 8px;
+}
+
+.health-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #ffffff;
+    font-weight: bold;
+    font-size: 12px;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.score-display {
+    position: absolute;
+    top: 50px;
+    right: 50px;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 15px 20px;
+    border-radius: 10px;
+    border: 2px solid #4ecdc4;
+    text-align: center;
+}
+
+.score-value {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #4ecdc4;
+    margin-bottom: 5px;
+}
+
+.score-label {
+    font-size: 0.8rem;
+    color: #b0c4de;
+    text-transform: uppercase;
+}
+
+.timer-display {
+    position: absolute;
+    top: 50px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.7);
+    padding: 15px 25px;
+    border-radius: 10px;
+    border: 2px solid #ff6b6b;
+    text-align: center;
+}
+
+.timer-value {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #ff6b6b;
+    margin-bottom: 5px;
+}
+
+.timer-label {
+    font-size: 0.8rem;
+    color: #b0c4de;
+    text-transform: uppercase;
+}
+
+.weapon-info {
+    position: absolute;
+    bottom: 50px;
+    right: 50px;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 15px;
+    border-radius: 10px;
+    border: 2px solid #ffd700;
+    text-align: center;
+}
+
+.weapon-name {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #ffd700;
+    margin-bottom: 5px;
+}
+
+.ammo-count {
+    font-size: 1rem;
+    color: #ffffff;
+}
+
+.ammo-low {
+    color: #e74c3c;
+    animation: ammoWarning 1s infinite;
+}
+
+@keyframes ammoWarning {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* Crosshair */
+.crosshair {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px;
+    height: 20px;
+    pointer-events: none;
+}
+
+.crosshair::before,
+.crosshair::after {
+    content: '';
+    position: absolute;
+    background: #ff0000;
+    box-shadow: 0 0 5px rgba(255, 0, 0, 0.8);
+}
+
+.crosshair::before {
+    top: 50%;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    transform: translateY(-50%);
+}
+
+.crosshair::after {
+    top: 0;
+    left: 50%;
+    width: 2px;
+    height: 100%;
+    transform: translateX(-50%);
+}
+
+/* Minimap */
+.minimap {
+    position: absolute;
+    top: 50px;
+    left: 50px;
+    width: 150px;
+    height: 150px;
+    background: rgba(0, 0, 0, 0.8);
+    border: 2px solid #ffffff;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.minimap-content {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: #2c3e50;
+}
+
+.minimap-player {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    border: 1px solid #ffffff;
+}
+
+.minimap-player.self {
+    background: #4ecdc4;
+    box-shadow: 0 0 5px #4ecdc4;
+}
+
+.minimap-player.ally {
+    background: #2ecc71;
+}
+
+.minimap-player.enemy {
+    background: #e74c3c;
+}
+
+/* Kill Feed */
+.kill-feed {
+    position: absolute;
+    top: 100px;
+    right: 50px;
+    width: 300px;
+    max-height: 200px;
+    overflow: hidden;
+}
+
+.kill-entry {
+    background: rgba(0, 0, 0, 0.7);
+    padding: 8px 12px;
+    margin-bottom: 5px;
+    border-radius: 5px;
+    border-left: 3px solid #ff6b6b;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.kill-entry .killer {
+    color: #4ecdc4;
+    font-weight: bold;
+}
+
+.kill-entry .weapon {
+    color: #ffd700;
+    font-size: 0.8rem;
+}
+
+.kill-entry .victim {
+    color: #ff6b6b;
+    font-weight: bold;
+}
+
+/* Damage Indicator */
+.damage-indicator {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    border: 10px solid rgba(255, 0, 0, 0);
+    border-radius: 20px;
+    transition: border-color 0.1s ease;
+}
+
+.damage-indicator.active {
+    border-color: rgba(255, 0, 0, 0.3);
+    animation: damageFlash 0.3s ease;
+}
+
+@keyframes damageFlash {
+    0% { border-color: rgba(255, 0, 0, 0.6); }
+    100% { border-color: rgba(255, 0, 0, 0); }
+}
+
+/* Notifications */
+.notification {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.9);
+    color: #ffffff;
+    padding: 20px 30px;
+    border-radius: 10px;
+    border: 2px solid #4ecdc4;
+    font-size: 1.5rem;
+    font-weight: bold;
+    text-align: center;
+    z-index: 200;
+    animation: notificationSlide 0.5s ease;
+}
+
+@keyframes notificationSlide {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.8);
+    }
+    100% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+.notification.success {
+    border-color: #2ecc71;
+    color: #2ecc71;
+}
+
+.notification.warning {
+    border-color: #f39c12;
+    color: #f39c12;
+}
+
+.notification.error {
+    border-color: #e74c3c;
+    color: #e74c3c;
+}
+
+/* Game Over Screen */
+.game-over {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s ease;
+}
+
+.game-over.visible {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.game-over-content {
+    text-align: center;
+    max-width: 600px;
+    padding: 2rem;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+}
+
+.game-over-title {
+    font-size: 3rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+    color: #ff6b6b;
+}
+
+.game-over-title.victory {
+    color: #2ecc71;
+}
+
+.final-score {
+    font-size: 2rem;
+    color: #4ecdc4;
+    margin-bottom: 2rem;
+}
+
+.scoreboard {
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 2rem;
+}
+
+.scoreboard-header {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 1rem;
+    padding: 0.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    font-weight: bold;
+    color: #b0c4de;
+}
+
+.scoreboard-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 1rem;
+    padding: 0.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.scoreboard-row:last-child {
+    border-bottom: none;
+}
+
+.player-name {
+    color: #ffffff;
+    font-weight: bold;
+}
+
+.player-name.winner {
+    color: #ffd700;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .game-title {
+        font-size: 2.5rem;
+    }
+    
+    .map-preview {
+        width: 300px;
+        height: 225px;
+    }
+    
+    .game-info {
+        grid-template-columns: 1fr;
+    }
+    
+    .controls-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .hud-overlay .health-bar,
+    .hud-overlay .score-display,
+    .hud-overlay .weapon-info {
+        position: relative;
+        margin: 10px;
+    }
+}
+
+/* Animações de entrada */
+.fade-in {
+    animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.slide-up {
+    animation: slideUp 0.5s ease;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.scale-in {
+    animation: scaleIn 0.3s ease;
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Utilitários */
+.hidden {
+    display: none !important;
+}
+
+.invisible {
+    opacity: 0 !important;
+}
+
+.no-pointer-events {
+    pointer-events: none !important;
+}
+
+.text-center {
+    text-align: center !important;
+}
+
+.text-glow {
+    text-shadow: 0 0 10px currentColor;
+}
+
+.border-glow {
+    box-shadow: 0 0 10px currentColor;
+}
+
+/* Scrollbar personalizada */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+}

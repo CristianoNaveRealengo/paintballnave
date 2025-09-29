@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Paintball VR - Meta Quest 3</title>
+    <meta name="description" content="Jogo de Paintball Multiplayer em VR">
+    
+    <!-- A-Frame Core -->
+        <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
+        
+        <!-- A-Frame Physics System (versão compatível com A-Frame 1.4.0) -->
+        <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-physics-system@v4.2.0/dist/aframe-physics-system.min.js"></script>
+        
+        <!-- A-Frame Extras (versão compatível com A-Frame 1.4.0) -->
+        <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.2/dist/aframe-extras.min.js"></script>
+        
+        <!-- WebXR Polyfill -->
+        <script src="https://cdn.jsdelivr.net/npm/webxr-polyfill@latest/build/webxr-polyfill.min.js"></script>
+        
+        <!-- A-Frame WebXR (versão específica para compatibilidade) -->
+        <script src="https://cdn.jsdelivr.net/gh/aframevr/aframe-webxr@v1.0.0/dist/aframe-webxr.min.js"></script>
+        
+        <!-- A-Frame Hand Tracking Controls (versão específica) -->
+        <script src="https://cdn.jsdelivr.net/gh/aframevr/aframe-hand-tracking-controls@v1.0.0/dist/aframe-hand-tracking-controls.min.js"></script>
+        
+        <!-- A-Frame Hand Tracking Extras (versão específica) -->
+        <script src="https://cdn.jsdelivr.net/gh/aframevr/aframe-hand-tracking-extras@v1.0.0/dist/aframe-hand-tracking-extras.min.js"></script>
+        
+        <!-- Socket.IO for multiplayer -->
+        <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    
+    <!-- Scripts dos componentes -->
+    <script src="js/config/game-config.js"></script>
+    <script src="js/effects/effects-manager.js"></script>
+    <script src="js/components/player-controller.js"></script>
+    <script src="js/components/weapon-system.js"></script>
+    <script src="js/components/vr-hud.js"></script>
+    <script src="js/ui/loading-screen.js"></script>
+    <script src="js/multiplayer/network-manager.js"></script>
+    <script src="js/components/ar-config.js"></script>
+    <script src="js/components/ar-manager.js"></script>
+    <script src="js/components/quest-hand-tracking.js"></script>
+    
+    <!-- Utilitários -->
+    <script src="js/utils/math-utils.js"></script>
+    <script src="js/utils/audio-utils.js"></script>
+    <script src="js/utils/ar-test.js"></script>
+    
+    <!-- Estilos CSS -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Tela de Loading com Preview do Mapa -->
+    <div id="loadingScreen">
+        <div id="mapPreview"></div>
+        <div class="loading-text">PAINTBALL VR</div>
+        <div class="loading-text">Carregando Arena...</div>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="game-info">
+            <p>🎯 Vida: 100 HP por jogador</p>
+            <p>⏱️ Duração: 5 minutos</p>
+            <p>🏆 Vence quem fizer mais pontos</p>
+            <p>🔫 Armas especiais aparecem no centro</p>
+        </div>
+    </div>
+
+    <!-- Cena A-Frame para Meta Quest 3 AR -->
+    <a-scene 
+        vr-mode-ui="enabled: true" 
+        embedded 
+        style="height: 100vh; width: 100vw;"
+        webxr="requiredFeatures: hit-test,plane-detection,anchors; optionalFeatures: hand-tracking,light-estimation,local-floor,bounded-floor"
+
+        effects-manager
+        network-manager
+        ar-manager="planeDetection: true; autoAnchor: true; arenaScale: 0.5; showPlaneOutlines: true"
+        background="color: transparent"
+        fog="type: linear; color: #87CEEB; near: 20; far: 100"
+        shadow="type: pcf; autoUpdate: true"
+        loading-screen="dotsColor: red; backgroundColor: black"
+        device-orientation-permission-ui="enabled: true">
+        
+        <!-- Assets -->
+        <a-assets>
+            <!-- Sons -->
+            <audio id="pickup-sound" src="assets/audio/pickup.wav" preload="auto" crossorigin="anonymous"></audio>
+            <audio id="pistol-shot" src="assets/sounds/pistol-shot.wav" preload="auto" crossorigin="anonymous"></audio>
+            <audio id="sniper-shot" src="assets/sounds/sniper-shot.wav" preload="auto" crossorigin="anonymous"></audio>
+            <audio id="reload" src="assets/sounds/reload.wav" preload="auto" crossorigin="anonymous"></audio>
+            <audio id="hit-marker" src="assets/sounds/hit-marker.wav" preload="auto" crossorigin="anonymous"></audio>
+            <audio id="health-pickup" src="assets/sounds/health-pickup.wav" preload="auto" crossorigin="anonymous"></audio>
+            <audio id="weapon-pickup" src="assets/sounds/weapon-pickup.wav" preload="auto" crossorigin="anonymous"></audio>
+            <audio id="footsteps" src="assets/sounds/footsteps.wav" preload="auto" crossorigin="anonymous"></audio>
+            <audio id="ambient" src="assets/sounds/ambient.wav" preload="auto" crossorigin="anonymous" loop></audio>
+            
+            <!-- Texturas -->
+            <img id="ground-texture" src="assets/textures/grass.svg" crossorigin="anonymous">
+            <img id="wall-texture" src="assets/textures/brick.svg" crossorigin="anonymous">
+            <img id="obstacle-texture" src="assets/textures/wood.svg" crossorigin="anonymous">
+            
+            <!-- Modelos 3D -->
+            <a-asset-item id="handModel" src="https://cdn.aframe.io/controllers/hands/leftHand.glb"></a-asset-item>
+            
+            <!-- Mixins para reutilização -->
+            <a-mixin id="obstacle-mixin" 
+                geometry="primitive: box" 
+                material="color: #8B4513; roughness: 0.8"
+                static-body></a-mixin>
+                
+            <a-mixin id="cylinder-obstacle-mixin" 
+                geometry="primitive: cylinder" 
+                material="color: #654321; roughness: 0.8"
+                static-body></a-mixin>
+            
+            <!-- Modelos 3D -->
+            <a-mixin id="obstacle" 
+                geometry="primitive: box; width: 2; height: 2; depth: 1"
+                material="color: #4169E1; roughness: 0.8"
+                static-body></a-mixin>
+                
+            <a-mixin id="cover" 
+                geometry="primitive: cylinder; radius: 1; height: 1.5"
+                material="color: #32CD32; roughness: 0.8"
+                static-body></a-mixin>
+        </a-assets>
+
+        <!-- Iluminação -->
+        <a-light type="ambient" color="#404040" intensity="0.4"></a-light>
+        <a-light type="directional" 
+                position="10 20 10" 
+                color="#ffffff" 
+                intensity="0.8"
+                light="castShadow: true; shadowMapHeight: 2048; shadowMapWidth: 2048"></a-light>
+
+        <!-- Arena Principal (Adaptada para AR) -->
+        <a-entity id="arena" scale="0.5 0.5 0.5">
+            <!-- Chão da Arena (Semi-transparente para AR) -->
+            <a-plane 
+                id="ground"
+                position="0 0.01 0" 
+                rotation="-90 0 0" 
+                width="40" 
+                height="40" 
+                color="#4CAF50"
+                material="src: #ground-texture; repeat: 10 10; roughness: 0.8; transparent: true; opacity: 0.3"
+                static-body
+                shadow="receive: true"
+                class="ar-arena-element">
+            </a-plane>
+            
+            <!-- Paredes (Semi-transparentes para AR) -->
+            <a-box id="wall-north" position="0 2 20" width="40" height="4" depth="1" 
+                material="src: #wall-texture; repeat: 8 1; roughness: 0.9; transparent: true; opacity: 0.6" 
+                static-body
+                shadow="cast: true; receive: true"
+                class="ar-arena-element interactive"></a-box>
+            <a-box id="wall-south" position="0 2 -20" width="40" height="4" depth="1" 
+                material="src: #wall-texture; repeat: 8 1; roughness: 0.9; transparent: true; opacity: 0.6" 
+                static-body
+                shadow="cast: true; receive: true"
+                class="ar-arena-element interactive"></a-box>
+            <a-box id="wall-east" position="20 2 0" width="1" height="4" depth="40" 
+                material="src: #wall-texture; repeat: 8 1; roughness: 0.9; transparent: true; opacity: 0.6" 
+                static-body
+                shadow="cast: true; receive: true"
+                class="ar-arena-element interactive"></a-box>
+            <a-box id="wall-west" position="-20 2 0" width="1" height="4" depth="40" 
+                material="src: #wall-texture; repeat: 8 1; roughness: 0.9; transparent: true; opacity: 0.6" 
+                static-body
+                shadow="cast: true; receive: true"
+                class="ar-arena-element interactive"></a-box>
+            
+            <!-- Obstáculos baseados na configuração -->
+            <!-- Obstáculos centrais (Otimizados para AR) -->
+            <a-entity mixin="obstacle-mixin" position="-5 1 -8" geometry="width: 2; height: 2; depth: 4" 
+                material="color: #2196F3; transparent: true; opacity: 0.7; emissive: #1976D2; emissiveIntensity: 0.2"
+                class="interactive ar-arena-element"
+                animation="property: rotation; to: 0 360 0; loop: true; dur: 20000"
+                shadow="cast: true; receive: true"></a-entity>
+            <a-entity mixin="obstacle-mixin" position="5 1 -8" geometry="width: 2; height: 2; depth: 4" 
+                material="color: #FF9800; transparent: true; opacity: 0.7; emissive: #F57C00; emissiveIntensity: 0.2"
+                class="interactive ar-arena-element"
+                animation="property: scale; to: 1.1 1.1 1.1; direction: alternate; loop: true; dur: 3000"
+                shadow="cast: true; receive: true"></a-entity>
+            <a-entity mixin="obstacle-mixin" position="-5 1 8" geometry="width: 2; height: 2; depth: 4" 
+                material="color: #FF9800; transparent: true; opacity: 0.7; emissive: #F57C00; emissiveIntensity: 0.2"
+                class="interactive ar-arena-element"
+                animation="property: scale; to: 1.1 1.1 1.1; direction: alternate; loop: true; dur: 3000; delay: 1500"
+                shadow="cast: true; receive: true"></a-entity>
+            <a-entity mixin="obstacle-mixin" position="5 1 8" geometry="width: 2; height: 2; depth: 4" 
+                material="color: #2196F3; transparent: true; opacity: 0.7; emissive: #1976D2; emissiveIntensity: 0.2"
+                class="interactive ar-arena-element"
+                animation="property: rotation; to: 0 360 0; loop: true; dur: 20000; delay: 10000"
+                shadow="cast: true; receive: true"></a-entity>
+            
+            <!-- Obstáculos laterais -->
+            <a-entity mixin="cylinder-obstacle-mixin" position="-12 1.5 0" geometry="radius: 1.5; height: 3" shadow="cast: true; receive: true"></a-entity>
+            <a-entity mixin="cylinder-obstacle-mixin" position="12 1.5 0" geometry="radius: 1.5; height: 3" shadow="cast: true; receive: true"></a-entity>
+            
+            <!-- Obstáculos nos cantos -->
+            <a-entity mixin="obstacle-mixin" position="-16 0.75 -16" geometry="width: 1.5; height: 1.5; depth: 1.5" shadow="cast: true; receive: true"></a-entity>
+            <a-entity mixin="obstacle-mixin" position="16 0.75 -16" geometry="width: 1.5; height: 1.5; depth: 1.5" shadow="cast: true; receive: true"></a-entity>
+            <a-entity mixin="obstacle-mixin" position="-16 0.75 16" geometry="width: 1.5; height: 1.5; depth: 1.5" shadow="cast: true; receive: true"></a-entity>
+            <a-entity mixin="obstacle-mixin" position="16 0.75 16" geometry="width: 1.5; height: 1.5; depth: 1.5" shadow="cast: true; receive: true"></a-entity>
+            
+            <!-- Cobertura central -->
+            <a-entity mixin="cylinder-obstacle-mixin" position="0 1 0" geometry="radius: 2; height: 2" 
+                material="color: #696969" shadow="cast: true; receive: true"></a-entity>
+        </a-entity>
+
+        <!-- Pontos de Spawn -->
+        <a-entity id="spawnPoints">
+            <a-sphere position="20 0.5 20" radius="0.5" color="green" visible="false" id="spawn1"></a-sphere>
+            <a-sphere position="-20 0.5 -20" radius="0.5" color="red" visible="false" id="spawn2"></a-sphere>
+            <a-sphere position="20 0.5 -20" radius="0.5" color="blue" visible="false" id="spawn3"></a-sphere>
+            <a-sphere position="-20 0.5 20" radius="0.5" color="yellow" visible="false" id="spawn4"></a-sphere>
+        </a-entity>
+
+        <!-- Pontos de vida -->
+        <a-entity id="health-packs">
+            <a-entity position="-10 0.5 -10" 
+                geometry="primitive: box; width: 1; height: 1; depth: 1"
+                material="color: #FF0000; emissive: #330000; metalness: 0.1; roughness: 0.3"
+                health-pack
+                animation="property: rotation; to: 0 360 0; loop: true; dur: 3000"
+                shadow="cast: true">
+                <a-text value="+" position="0 1.5 0" align="center" color="#FF0000" scale="2 2 2"></a-text>
+            </a-entity>
+            
+            <a-entity position="10 0.5 10" 
+                geometry="primitive: box; width: 1; height: 1; depth: 1"
+                material="color: #FF0000; emissive: #330000; metalness: 0.1; roughness: 0.3"
+                health-pack
+                animation="property: rotation; to: 0 360 0; loop: true; dur: 3000"
+                shadow="cast: true">
+                <a-text value="+" position="0 1.5 0" align="center" color="#FF0000" scale="2 2 2"></a-text>
+            </a-entity>
+            
+            <a-entity position="-15 0.5 5" 
+                geometry="primitive: box; width: 1; height: 1; depth: 1"
+                material="color: #FF0000; emissive: #330000; metalness: 0.1; roughness: 0.3"
+                health-pack
+                animation="property: rotation; to: 0 360 0; loop: true; dur: 3000"
+                shadow="cast: true">
+                <a-text value="+" position="0 1.5 0" align="center" color="#FF0000" scale="2 2 2"></a-text>
+            </a-entity>
+            
+            <a-entity position="15 0.5 -5" 
+                geometry="primitive: box; width: 1; height: 1; depth: 1"
+                material="color: #FF0000; emissive: #330000; metalness: 0.1; roughness: 0.3"
+                health-pack
+                animation="property: rotation; to: 0 360 0; loop: true; dur: 3000"
+                shadow="cast: true">
+                <a-text value="+" position="0 1.5 0" align="center" color="#FF0000" scale="2 2 2"></a-text>
+            </a-entity>
+        </a-entity>
+        
+        <!-- Armas especiais -->
+        <a-entity id="special-weapons">
+            <a-entity position="0 0.5 -15" 
+                geometry="primitive: box; width: 1; height: 0.5; depth: 2"
+                material="color: #FFD700; emissive: #332200; metalness: 0.8; roughness: 0.2"
+                special-weapon="weaponType: sniper"
+                animation="property: position; to: 0 1 -15; dir: alternate; loop: true; dur: 2000"
+                shadow="cast: true">
+                <a-text value="SNIPER" position="0 1 0" align="center" color="#FFD700" scale="0.8 0.8 0.8"></a-text>
+            </a-entity>
+            
+            <a-entity position="0 0.5 15" 
+                geometry="primitive: box; width: 1; height: 0.5; depth: 2"
+                material="color: #FFD700; emissive: #332200; metalness: 0.8; roughness: 0.2"
+                special-weapon="weaponType: sniper"
+                animation="property: position; to: 0 1 15; dir: alternate; loop: true; dur: 2000"
+                shadow="cast: true">
+                <a-text value="SNIPER" position="0 1 0" align="center" color="#FFD700" scale="0.8 0.8 0.8"></a-text>
+            </a-entity>
+        </a-entity>
+
+        <!-- Jogador Principal -->
+        <a-entity id="player" 
+            position="0 1.6 -18"
+            movement-controls="fly: false; constrainToNavMesh: false; speed: 0.1"
+            weapon-system="weaponType: pistol"
+            vr-hud
+            effects-manager
+            network-manager
+            kinematic-body="mass: 70">
+            
+            <!-- Câmera VR -->
+            <a-camera id="camera" 
+                look-controls="pointerLockEnabled: true; reverseMouseDrag: false"
+                wasd-controls="acceleration: 20; enabled: true"
+                position="0 0 0"
+                fov="80"
+                near="0.1"
+                far="1000">
+                
+                <!-- Crosshair -->
+                <a-ring position="0 0 -1" 
+                    radius-inner="0.005" 
+                    radius-outer="0.01" 
+                    color="#00FF00"
+                    material="shader: flat; transparent: true; opacity: 0.8">
+                </a-ring>
+                
+                <!-- HUD Elements -->
+                <a-entity id="vr-hud-container" position="0 0 -0.5">
+                    <!-- Health Bar -->
+                    <a-plane id="health-bar-bg" position="-0.3 0.2 0" width="0.2" height="0.02" 
+                        color="#333333" material="transparent: true; opacity: 0.7"></a-plane>
+                    <a-plane id="health-bar" position="-0.3 0.2 0.001" width="0.2" height="0.015" 
+                        color="#00FF00" material="transparent: true; opacity: 0.9"></a-plane>
+                    
+                    <!-- Score -->
+                    <a-text id="score-text" position="-0.3 0.15 0" value="Score: 0" 
+                        color="#FFFFFF" scale="0.1 0.1 0.1" align="left"></a-text>
+                    
+                    <!-- Timer -->
+                    <a-text id="timer-text" position="0 0.2 0" value="05:00" 
+                        color="#FFFFFF" scale="0.15 0.15 0.15" align="center"></a-text>
+                    
+                    <!-- Weapon Info -->
+                    <a-text id="weapon-text" position="0.2 0.15 0" value="Pistol" 
+                        color="#FFFFFF" scale="0.1 0.1 0.1" align="right"></a-text>
+                    <a-text id="ammo-text" position="0.2 0.1 0" value="30/90" 
+                        color="#FFFFFF" scale="0.08 0.08 0.08" align="right"></a-text>
+                </a-entity>
+            </a-camera>
+            
+            <!-- Quest 3 Hand Tracking Controls -->
+            <a-entity id="leftHand" 
+                quest-hand-tracking="hand: left; showHandModel: true; hapticFeedback: true"
+                hand-tracking-controls="hand: left; modelStyle: mesh; modelColor: #FFE0BD"
+                laser-controls="hand: left"
+                raycaster="objects: .interactive; far: 10; lineColor: #0000FF; lineOpacity: 0.5"
+                line="color: blue; opacity: 0.75"
+                vive-controls="hand: left"
+                oculus-touch-controls="hand: left"
+                windows-motion-controls="hand: left">
+            </a-entity>
+            
+            <a-entity id="rightHand" 
+                quest-hand-tracking="hand: right; showHandModel: true; hapticFeedback: true; shootGesture: point; reloadGesture: fist; interactGesture: pinch"
+                hand-tracking-controls="hand: right; modelStyle: mesh; modelColor: #FFE0BD"
+                laser-controls="hand: right"
+                raycaster="objects: .interactive; far: 10; lineColor: #FF0000; lineOpacity: 0.5"
+                line="color: red; opacity: 0.75"
+                vive-controls="hand: right"
+                oculus-touch-controls="hand: right"
+                windows-motion-controls="hand: right">
+                
+                <!-- Weapon Model for Right Hand (reduzido para AR) -->
+                <a-entity id="weapon-model" position="0 -0.08 -0.15" rotation="-10 0 0">
+                    <a-box width="0.03" height="0.1" depth="0.2" 
+                        color="#333333" 
+                        material="metalness: 0.8; roughness: 0.2; transparent: true; opacity: 0.8">
+                    </a-box>
+                    <!-- Cano da arma -->
+                    <a-cylinder position="0 0 -0.15" radius="0.008" height="0.08" 
+                        color="#111111" rotation="90 0 0"
+                        material="transparent: true; opacity: 0.8">
+                    </a-cylinder>
+                </a-entity>
+            </a-entity>
+        </a-entity>
+
+        <!-- Outros Jogadores (serão criados dinamicamente) -->
+        <a-entity id="otherPlayers"></a-entity>
+
+        <!-- Projéteis (serão criados dinamicamente) -->
+        <a-entity id="projectiles"></a-entity>
+
+        <!-- Efeitos Visuais -->
+        <a-entity id="effects"></a-entity>
+
+    </a-scene>
+
+    <!-- Scripts de inicialização -->
+    <script src="js/game-init.js"></script>
+</body>
+</html>
