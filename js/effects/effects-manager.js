@@ -290,7 +290,7 @@ class EffectsManager {
         
         // Configurar cor baseada na superfície
         const color = surface === 'player' ? '#ff0000' : '#888888';
-        effect.setAttribute('material', 'color', color);
+        effect.setAttribute('material', { color: color });
         
         // Animar partículas
         effect.setAttribute('animation', {
@@ -453,12 +453,12 @@ class EffectsManager {
 
     // Feedback háptico para controladores VR
     triggerHapticFeedback(intensity = 0.5, duration = 100) {
-        const controllers = document.querySelectorAll('[hand-controls]');
+        const controllers = document.querySelectorAll('[quest-hand-tracking]');
         
         controllers.forEach(controller => {
-            const gamepad = controller.components['hand-controls']?.gamepad;
-            if (gamepad && gamepad.hapticActuators && gamepad.hapticActuators.length > 0) {
-                gamepad.hapticActuators[0].pulse(intensity, duration);
+            const questHandTracking = controller.components['quest-hand-tracking'];
+            if (questHandTracking && questHandTracking.gamepad && questHandTracking.gamepad.hapticActuators && questHandTracking.gamepad.hapticActuators.length > 0) {
+                questHandTracking.gamepad.hapticActuators[0].pulse(intensity, duration);
             }
         });
     }
@@ -637,7 +637,7 @@ AFRAME.registerComponent('projectile-effects', {
                 if (material && typeof material === 'object') {
                     const currentOpacity = material.opacity;
                     if (currentOpacity > 0) {
-                        this.trail.setAttribute('material', 'opacity', currentOpacity * 0.95);
+                        this.trail.setAttribute('material', { opacity: currentOpacity * 0.95 });
                     }
                 }
             } catch (error) {

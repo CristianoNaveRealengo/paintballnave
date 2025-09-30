@@ -652,13 +652,13 @@ class NetworkManager {
 				pointsText.parentNode.removeChild(pointsText);
 			}
 		}, 1100);
-	},
+	}
 
 	updateOtherPlayerColor(playerElement, newColor) {
 		// Atualizar cor do corpo de outro jogador
 		const body = playerElement.querySelector('.player-body');
 		if (body) {
-			body.setAttribute('material', 'color', newColor);
+			body.setAttribute('material', { color: newColor });
 			
 			// Efeito visual de mudança de cor
 			body.setAttribute('animation__colorchange', {
@@ -670,7 +670,43 @@ class NetworkManager {
 				easing: 'easeInOutQuad'
 			});
 		}
-	},
+	}
+
+	updateOtherPlayerColor(playerElement, newColor) {
+		// Atualizar cor do corpo de outro jogador
+		const body = playerElement.querySelector('.player-body');
+		if (body) {
+			body.setAttribute('material', { color: newColor });
+			
+			// Efeito visual de mudança de cor
+			body.setAttribute('animation__colorchange', {
+				property: 'scale',
+				from: '1 1 1',
+				to: '1.1 1.1 1.1',
+				dur: 300,
+				dir: 'alternate',
+				easing: 'easeInOutQuad'
+			});
+		}
+	}
+
+	updateOtherPlayerColor(playerElement, newColor) {
+		// Atualizar cor do corpo de outro jogador
+		const body = playerElement.querySelector('.player-body');
+		if (body) {
+			body.setAttribute('material', { color: newColor });
+			
+			// Efeito visual de mudança de cor
+			body.setAttribute('animation__colorchange', {
+				property: 'scale',
+				from: '1 1 1',
+				to: '1.1 1.1 1.1',
+				dur: 300,
+				dir: 'alternate',
+				easing: 'easeInOutQuad'
+			});
+		}
+	}
 
 	createOtherPlayer(player) {
 		// Verificar se jogador já existe

@@ -444,7 +444,7 @@ AFRAME.registerComponent('vr-hud', {
             const reloadIndicator = this.hudContainer.querySelector('#reload-indicator');
             if (reloadIndicator && ammoData.reloading) {
                 reloadIndicator.setAttribute('visible', true);
-                reloadIndicator.setAttribute('material', 'opacity', 0.8);
+                reloadIndicator.setAttribute('material', { opacity: 0.8 });
             } else if (reloadIndicator) {
                 reloadIndicator.setAttribute('visible', false);
             }

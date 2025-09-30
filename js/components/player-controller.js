@@ -50,7 +50,17 @@ AFRAME.registerComponent("player-controller", {
 
 		// Eventos de mouse para desktop
 		document.addEventListener("click", (e) => {
-			if (document.pointerLockElement) {
+			// Permitir disparos mesmo sem pointer lock para melhor experiência
+			// Verificar se o clique foi na área do jogo (não em UI)
+			if (!e.target.closest('.ui-element') && !e.target.closest('button')) {
+				this.handleShoot();
+			}
+		});
+
+		// Evento adicional para mousedown como backup
+		document.addEventListener("mousedown", (e) => {
+			// Apenas botão esquerdo do mouse
+			if (e.button === 0 && !e.target.closest('.ui-element') && !e.target.closest('button')) {
 				this.handleShoot();
 			}
 		});

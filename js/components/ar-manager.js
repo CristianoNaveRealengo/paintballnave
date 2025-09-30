@@ -95,7 +95,7 @@ AFRAME.registerComponent("ar-manager", {
 		console.log("🥽 Entrando em modo AR");
 
 		// Ocultar background e configurar passthrough
-		this.el.sceneEl.setAttribute("background", "transparent", true);
+		this.el.sceneEl.setAttribute("background", { transparent: true });
 
 		// Iniciar detecção de planos se habilitada
 		if (this.data.planeDetection && this.data.autoAnchor) {
@@ -112,7 +112,7 @@ AFRAME.registerComponent("ar-manager", {
 		console.log("🚪 Saindo do modo AR");
 
 		// Restaurar background
-		this.el.sceneEl.setAttribute("background", "color", "#87CEEB");
+		this.el.sceneEl.setAttribute("background", { color: "#87CEEB" });
 
 		// Limpar planos detectados
 		this.clearDetectedPlanes();

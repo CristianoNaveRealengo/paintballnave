@@ -262,7 +262,7 @@ class GameInitializer {
 			];
 
 			// Configurar para AR
-			scene.setAttribute("background", "transparent", true);
+			scene.setAttribute("background", { transparent: true });
 			scene.setAttribute("ar-manager", {
 				planeDetection: true,
 				autoAnchor: true,
@@ -276,8 +276,8 @@ class GameInitializer {
 		// Aplicar configuração WebXR
 		if (webxrConfig.requiredFeatures.length > 0) {
 			scene.setAttribute("webxr", {
-				requiredFeatures: webxrConfig.requiredFeatures.join(","),
-				optionalFeatures: webxrConfig.optionalFeatures.join(","),
+				requiredFeatures: webxrConfig.requiredFeatures.join(" "),
+				optionalFeatures: webxrConfig.optionalFeatures.join(" "),
 			});
 		}
 
@@ -292,21 +292,24 @@ class GameInitializer {
 	 */
 	initPhysicsSystem(scene) {
 		try {
-			// Verificar se CANNON está disponível
-			if (
-				typeof CANNON !== "undefined" ||
-				(window.AFRAME && window.AFRAME.physics)
-			) {
-				scene.setAttribute("physics", {
+			// Verificar se CANNON está disponível de forma mais robusta
+			const cannonAvailable = typeof CANNON !== "undefined";
+			const aframePhysicsAvailable = window.AFRAME && 
+				window.AFRAME.systems && 
+				window.AFRAME.systems.physics;
+			
+			if (cannonAvailable || aframePhysicsAvailable) {
+				// Configurar física apenas se o sistema estiver disponível
+				const physicsConfig = {
 					driver: "cannon",
 					debug: false,
-					gravity: "0 -9.8 0",
-				});
+					gravity: "0 -9.8 0"
+				};
+				
+				scene.setAttribute("physics", physicsConfig);
 				console.log("✅ Sistema de física CANNON inicializado");
 			} else {
-				console.warn(
-					"⚠️ CANNON.js não encontrado, tentando novamente..."
-				);
+				console.warn("⚠️ Sistema de física não disponível, tentando novamente...");
 				// Tentar novamente após mais tempo
 				setTimeout(() => {
 					this.initPhysicsSystem(scene);
@@ -314,6 +317,8 @@ class GameInitializer {
 			}
 		} catch (error) {
 			console.error("Erro ao inicializar física:", error);
+			// Desabilitar física em caso de erro persistente
+			console.warn("⚠️ Física desabilitada devido a erros");
 		}
 
 		// Aplicar configurações AR se necessário
@@ -369,7 +374,7 @@ class GameInitializer {
 			case "ar":
 				return [...baseComponents, "ar-manager", "quest-hand-tracking"];
 			case "vr":
-				return [...baseComponents, "hand-controls"];
+				return [...baseComponents, "quest-hand-tracking"];
 			case "desktop":
 				return [
 					...baseComponents,
